@@ -29,8 +29,6 @@
 | 【强烈推荐】SOS加速器     | ￥50/一次性（150G/100Mbps），￥19.7/70G/50Mbps/月，￥39.7/300G/300Mbps/月 | [SOS加速器网址](https://www.sosjsq.com/index.php#/register?code=mmjIjIBx) | 有一次性流量包，价格稍微有点高，但速度是真快，39.7那档说是300Mbps，我实测能到500Mbps |
 | 69云     | ￥16.8/一次性（50G），￥6.9/100G/月 | [69云网址](https://69yun69.com/auth/register?code=fobiQj) | 有一次性流量包，每天签到可以增加流量 |
 | 网际快车     | ￥6.8/一次性（20G），￥24/60G/天【1800G/月】 | [网际快车网址](https://wjkc66.vip?c=BFQCSK) | 有一次性流量包，每天签到可以增加流量 |
-| 十元一年     | ￥9.9（100G/月），￥299.99/终身（6折券：LYcPG0Ik） | [十元一年网址](https://syyn.qeayr.cn/#/register?code=u8v4FflH) |                    |
-| UNDERWATER | 按用量计费：￥0.12/1G | [UNDERWATER网址](https://udwt.io/invite/i45yj83jeo) | IP比较纯净，速度较快 |
 | 宝可梦星云 | ￥19.9/180G/月，￥39.9/211G/一次性 | [宝可梦网址](https://love.52pokemon.cc/register?code=TWFWZ7Vd) | 有一次性流量包，每个月有免费的包月体验套餐，有IPLC线路 |
 
 
