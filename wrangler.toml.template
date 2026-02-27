@@ -76,7 +76,7 @@ crons = ["0 */1 * * *"]
 
 [[kv_namespaces]]
 binding = "SUB_MERGER_KV"
-id = ""
+id = "REPLACE_ME"
 
 # [[r2_buckets]]
 # binding = "MY_BUCKET"

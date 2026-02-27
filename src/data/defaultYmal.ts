@@ -201,11 +201,29 @@ rule-providers:
     path: ./RuleSet/cncidr.yaml
     interval: 86400
   lancidr:
-     type: http
-     behavior: ipcidr
-     url: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
-     path: ./RuleSet/lancidr.yaml
-     interval: 86400
+    type: http
+    behavior: ipcidr
+    url: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./RuleSet/lancidr.yaml
+    interval: 86400
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+  applications:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
+    path: ./ruleset/applications.yaml
+    interval: 86400
 
 # MARK: 路由规则
 rules:
@@ -374,23 +392,23 @@ export function getDefaultYamlString(): string {
 }
 
 export async function getDefaultYaml(env?: any): Promise<string> {
-    if (!env) {
-        // 如果没有环境变量，使用默认数据
-        return defaultYamlString;
-    }
-
-    try {
-        // 尝试从KV存储获取动态配置
-        const configKey = `${env.TABLENAME}:config`
-        const config = await env.SUB_MERGER_KV.get(configKey, "json")
-        
-        if (config && config.defaultYaml && config.defaultYaml.trim()) {
-            return config.defaultYaml;
-        }
-    } catch (error) {
-        console.error('获取默认YAML配置失败，使用默认配置:', error);
-    }
-
-    // 回退到默认配置
+  if (!env) {
+    // 如果没有环境变量，使用默认数据
     return defaultYamlString;
+  }
+
+  try {
+    // 尝试从KV存储获取动态配置
+    const configKey = `${env.TABLENAME}:config`;
+    const config = await env.SUB_MERGER_KV.get(configKey, "json");
+
+    if (config && config.defaultYaml && config.defaultYaml.trim()) {
+      return config.defaultYaml;
+    }
+  } catch (error) {
+    console.error("获取默认YAML配置失败，使用默认配置:", error);
+  }
+
+  // 回退到默认配置
+  return defaultYamlString;
 }

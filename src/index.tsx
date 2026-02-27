@@ -1,86 +1,84 @@
-import { Hono } from 'hono'
+import { Hono } from "hono";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+import { SubscriptionType } from "./types/types";
+import type { FinalObj } from "./types/types";
+
+import { generatePasswordHash } from "./utils/passwordMgr";
 import {
-  getCookie,
-  setCookie,
-  deleteCookie,
-} from 'hono/cookie'
-
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-import { SubscriptionType, SubUserInfo, FinalObj } from './types/types.d.ts'
-
-import { generatePasswordHash } from './utils/passwordMgr'
-import {getSubscribeYaml, generateSubscriptionUserInfoString} from './utils/getSubscribeYaml'
-import generateProxyConfigYaml from './utils/generateProxyConfigYaml'
-import { getDefaultYaml } from './data/defaultYmal'
-import { filterProxyForStash } from './utils/filterForStash.js'
-
+  getSubscribeYaml,
+  generateSubscriptionUserInfoString,
+} from "./utils/getSubscribeYaml";
+import generateProxyConfigYaml from "./utils/generateProxyConfigYaml";
+import { getDefaultYaml } from "./data/defaultYmal";
 
 type Bindings = {
-  SUB_MERGER_KV: KVNamespace
-  PASSWORD: string
-  SALT: string
-  TABLENAME: string
-  KEY_VERSION: string
-  MAGIC: string
-  UA: string
-  INSTANT_REFRESH_INTERVAL: string
+  SUB_MERGER_KV: KVNamespace;
+  PASSWORD: string;
+  SALT: string;
+  TABLENAME: string;
+  KEY_VERSION: string;
+  MAGIC: string;
+  UA: string;
+  INSTANT_REFRESH_INTERVAL: string;
   NOTIFICATION: {
-    BARK_OPENID: string
-  }
+    BARK_OPENID: string;
+  };
   ONETIME_PATTERN: {
-    EXCLUDE_PATTERN: string
-    FALLBACK_MATCH_PATTERN: string
-    OTHER_MATCH_PATTERN: string
-    MEDIA_MATCH_PATTERN: string
-    EMBY_MATCH_PATTERN: string
-    TELEGRAM_MATCH_PATTERN: string
-    STEAM_MATCH_PATTERN: string
-    POKER_MATCH_PATTERN: string
-    PROXY_MATCH_PATTERN: string
-    EXIT_MATCH_PATTERN: string
-    TAIGUO_MATCH_PATTERN: string
+    EXCLUDE_PATTERN: string;
+    FALLBACK_MATCH_PATTERN: string;
+    OTHER_MATCH_PATTERN: string;
+    MEDIA_MATCH_PATTERN: string;
+    EMBY_MATCH_PATTERN: string;
+    TELEGRAM_MATCH_PATTERN: string;
+    STEAM_MATCH_PATTERN: string;
+    POKER_MATCH_PATTERN: string;
+    PROXY_MATCH_PATTERN: string;
+    EXIT_MATCH_PATTERN: string;
+    TAIGUO_MATCH_PATTERN: string;
 
-    FALLBACK_EXCLUDE_PATTERN: string
-    OTHER_EXCLUDE_PATTERN: string
-    MEDIA_EXCLUDE_PATTERN: string
-    EMBY_EXCLUDE_PATTERN: string
-    TELEGRAM_EXCLUDE_PATTERN: string
-    STEAM_EXCLUDE_PATTERN: string
-    POKER_EXCLUDE_PATTERN: string
-    PROXY_EXCLUDE_PATTERN: string
-    EXIT_EXCLUDE_PATTERN: string
-    TAIGUO_EXCLUDE_PATTERN: string
-  }
+    FALLBACK_EXCLUDE_PATTERN: string;
+    OTHER_EXCLUDE_PATTERN: string;
+    MEDIA_EXCLUDE_PATTERN: string;
+    EMBY_EXCLUDE_PATTERN: string;
+    TELEGRAM_EXCLUDE_PATTERN: string;
+    STEAM_EXCLUDE_PATTERN: string;
+    POKER_EXCLUDE_PATTERN: string;
+    PROXY_EXCLUDE_PATTERN: string;
+    EXIT_EXCLUDE_PATTERN: string;
+    TAIGUO_EXCLUDE_PATTERN: string;
+  };
   SUBSCRIBE_PATTERN: {
-    EXCLUDE_PATTERN: string
-    FALLBACK_MATCH_PATTERN: string
-    OTHER_MATCH_PATTERN: string
-    MEDIA_MATCH_PATTERN: string
-    TELEGRAM_MATCH_PATTERN: string
-    STEAM_MATCH_PATTERN: string
-    POKER_MATCH_PATTERN: string
-    PROXY_MATCH_PATTERN: string
-    EXIT_MATCH_PATTERN: string
-    TAIGUO_MATCH_PATTERN: string
+    EXCLUDE_PATTERN: string;
+    FALLBACK_MATCH_PATTERN: string;
+    OTHER_MATCH_PATTERN: string;
+    MEDIA_MATCH_PATTERN: string;
+    TELEGRAM_MATCH_PATTERN: string;
+    STEAM_MATCH_PATTERN: string;
+    POKER_MATCH_PATTERN: string;
+    PROXY_MATCH_PATTERN: string;
+    EXIT_MATCH_PATTERN: string;
+    TAIGUO_MATCH_PATTERN: string;
 
-    FALLBACK_EXCLUDE_PATTERN: string
-    OTHER_EXCLUDE_PATTERN: string
-    MEDIA_EXCLUDE_PATTERN: string
-    TELEGRAM_EXCLUDE_PATTERN: string
-    STEAM_EXCLUDE_PATTERN: string
-    POKER_EXCLUDE_PATTERN: string
-    PROXY_EXCLUDE_PATTERN: string
-    EXIT_EXCLUDE_PATTERN: string
-    TAIGUO_EXCLUDE_PATTERN: string
-  }
-}
+    FALLBACK_EXCLUDE_PATTERN: string;
+    OTHER_EXCLUDE_PATTERN: string;
+    MEDIA_EXCLUDE_PATTERN: string;
+    TELEGRAM_EXCLUDE_PATTERN: string;
+    STEAM_EXCLUDE_PATTERN: string;
+    POKER_EXCLUDE_PATTERN: string;
+    PROXY_EXCLUDE_PATTERN: string;
+    EXIT_EXCLUDE_PATTERN: string;
+    TAIGUO_EXCLUDE_PATTERN: string;
+  };
+};
 
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono<{ Bindings: Bindings }>();
 
 const globalStyles = `
   * {
@@ -90,96 +88,231 @@ const globalStyles = `
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
-    padding: 20px;
-    color: #2c3e50;
+    padding: 24px;
+    color: #111827;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.14), transparent 55%),
+      radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.18), transparent 55%),
+      #f3f4f6;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
   }
   
+  /* 通用容器（Dashboard 外壳）：Banner → 导航 → 内容 → 按钮 四段式布局 */
   .container {
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 16px;
-    box-shadow: 
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    max-width: 1400px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow:
+      0 18px 40px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(148, 163, 184, 0.25);
+    max-width: 1440px;
     width: 100%;
-    margin: 0 auto;
+    height: 92vh;
+    max-height: 92vh;
+    margin: auto;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    max-height: 90vh;
+    backdrop-filter: blur(14px);
     display: flex;
     flex-direction: column;
+    color: #111827;
   }
   
-  .dashboard-header {
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-    color: white;
-    padding: 2rem;
-    text-align: center;
+  /* 登录页布局 */
+  .auth-page {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .auth-card {
+    background:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 60%),
+      radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.12), transparent 60%),
+      #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px 28px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow:
+      0 18px 40px rgba(15, 23, 42, 0.08),
+      0 0 0 1px rgba(209, 213, 219, 0.8);
     position: relative;
     overflow: hidden;
+  }
+  
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-radius: 19px;
+    background: radial-gradient(circle at top, rgba(191, 219, 254, 0.55), transparent 70%);
+    opacity: 0.7;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  
+  .auth-inner {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .auth-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #111827;
+  }
+  
+  .auth-title span.logo-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: conic-gradient(from 160deg, #2563eb, #22c55e, #ec4899, #2563eb);
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.5);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #ffffff;
+  }
+  
+  .auth-subtitle {
+    margin: 0 0 22px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #6b7280;
+  }
+  
+  .auth-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+  
+  .auth-badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(22, 163, 74, 0.45);
+    color: #166534;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .auth-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+  }
+  
+  .auth-footer {
+    margin-top: 20px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center;
+  }
+  
+  /* 顶部 Banner：固定高度，不参与挤压 */
+  .dashboard-header {
+    flex-shrink: 0;
+    min-height: 72px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 40%, #4f46e5 100%);
+    color: #ffffff;
+    padding: 1.6rem 2.4rem 1.2rem;
+    text-align: left;
+    overflow: hidden;
+    position: relative;
   }
   
   .dashboard-header::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="2" fill="white" opacity="0.1"/><circle cx="40" cy="60" r="1" fill="white" opacity="0.1"/></svg>');
+    top: -40%;
+    right: -10%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(219, 234, 254, 0.35), transparent 60%);
     pointer-events: none;
   }
   
   .dashboard-header h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 300;
+    margin: 0 0 6px;
+    font-size: 1.8rem;
+    font-weight: 500;
     position: relative;
     z-index: 1;
   }
   
+  .dashboard-header p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* 导航栏：固定区域，不随内容挤压 */
   .tabs {
-    display: flex;
-    background: linear-gradient(to right, #f8f9fa, #e9ecef);
-    border-bottom: 1px solid #dee2e6;
     flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    background: linear-gradient(to right, #f9fafb, #f3f4f6);
+    border-bottom: 1px solid #e5e7eb;
+    min-height: 52px;
+    z-index: 10;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 0 rgba(37, 99, 235, 0.06);
   }
   
   .tab {
     flex: 1;
+    min-width: 90px;
     padding: 1rem 2rem;
     background: none;
     border: none;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
-    color: #6c757d;
+    color: #6b7280;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     position: relative;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
   }
   
   .tab:hover {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    color: #1976d2;
-    transform: translateY(-1px);
+    background: #e5f0ff;
+    color: #1d4ed8;
   }
   
   .tab.active {
-    color: #1976d2;
-    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-    border-bottom: 3px solid #1976d2;
+    color: #1d4ed8;
+    background: #ffffff;
+    border-bottom: 2px solid #2563eb;
     font-weight: 600;
   }
   
+  /* 标签页内容区：占据剩余空间，内部可滚动 */
   .tab-content {
     display: none;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
-    position: relative;
+    flex-direction: column;
   }
   
   .tab-content.active {
@@ -188,16 +321,36 @@ const globalStyles = `
   }
   
   .tab-content-inner {
+    flex: 1;
+    min-height: 0;
     padding: 2rem;
     overflow-y: auto;
-    flex: 1;
+    background: #f9fafb;
   }
   
   .tab-content-header {
-    padding: 2rem 2rem 0 2rem;
     flex-shrink: 0;
-    background: white;
-    border-bottom: 1px solid #e9ecef;
+    margin-top: 0.75rem;
+    padding: 0.75rem 2rem;
+    background: linear-gradient(145deg, #f0f2f5 0%, #e8eaef 50%, #f5f6f8 100%);
+    border-top: 2px solid rgba(255, 255, 255, 0.95);
+    border-bottom: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    box-shadow:
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 4px rgba(0, 0, 0, 0.06),
+      0 1px 1px rgba(0, 0, 0, 0.04);
+  }
+  
+  .tab-content-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
   }
   
   .form {
@@ -208,83 +361,84 @@ const globalStyles = `
   input[type="password"], input[type="text"], select {
     padding: 0.75rem;
     margin-bottom: 1rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
     font-size: 1rem;
-    transition: all 0.3s ease;
-    background: white;
+    transition: all 0.18s ease;
+    background: #ffffff;
+    color: #111827;
   }
   
   input[type="password"]:focus, input[type="text"]:focus, select:focus {
     outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-    transform: translateY(-1px);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
   }
   
   button {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-    color: white;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #4f46e5 100%);
+    color: #ffffff;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(25, 118, 210, 0.25);
+    transition: all 0.18s ease;
+    box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35);
   }
   
   button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(25, 118, 210, 0.35);
-    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 16px 35px rgba(37, 99, 235, 0.45);
+    filter: brightness(1.02);
   }
   
   button:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.25);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
   }
   
   .error-message {
-    color: #d32f2f;
+    color: #b91c1c;
     margin-top: 10px;
     text-align: center;
     display: none;
-    padding: 0.75rem;
-    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
-    border-radius: 8px;
-    border-left: 4px solid #d32f2f;
+    padding: 0.5rem 0.75rem;
+    background: #fee2e2;
+    border-radius: 999px;
+    border: 1px solid #fecaca;
+    font-size: 0.82rem;
   }
   
   table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 1.5rem;
-    background: white;
-    border-radius: 12px;
+    background: #ffffff;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e1e5e9;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e5e7eb;
   }
   
   th, td {
-    padding: 1rem;
+    padding: 0.9rem 1rem;
     text-align: left;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #edf0f3;
   }
   
   th {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: #f9fafb;
     font-weight: 600;
-    color: #495057;
-    font-size: 0.875rem;
+    color: #4b5563;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.04em;
   }
   
   tr:hover {
-    background: linear-gradient(135deg, #f8f9ff 0%, #e8f4f8 100%);
+    background: #f3f4ff;
   }
   
   tr:last-child td {
@@ -297,66 +451,62 @@ const globalStyles = `
   }
   
   .btn {
-    padding: 0.5rem 1rem;
+    padding: 0.45rem 1rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 999px;
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.18s ease;
   }
   
   .btn-delete {
-    background: linear-gradient(135deg, #e57373 0%, #d32f2f 100%);
-    color: white;
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: #ffffff;
   }
   
   .btn-delete:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(211, 47, 47, 0.25);
-    background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+    box-shadow: 0 4px 10px rgba(248, 113, 113, 0.4);
   }
   
   .btn-add {
-    background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%);
-    color: white;
-    margin-right: 1rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #ffffff;
+    margin-right: 0.75rem;
   }
   
   .btn-add:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(56, 142, 60, 0.25);
-    background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+    box-shadow: 0 4px 10px rgba(74, 222, 128, 0.4);
   }
   
   .btn-save {
-    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-    color: white;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
   }
   
   .btn-save:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.25);
-    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
   }
   
   .btn-copy {
-    background: linear-gradient(135deg, #26c6da 0%, #00acc1 100%);
-    color: white;
+    background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+    color: #ffffff;
     position: relative;
   }
   
   .btn-copy:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 172, 193, 0.25);
-    background: linear-gradient(135deg, #00acc1 0%, #0097a7 100%);
+    box-shadow: 0 4px 10px rgba(34, 211, 238, 0.4);
   }
   
   .copy-tooltip {
     position: absolute;
-    background: linear-gradient(135deg, #37474f 0%, #263238 100%);
-    color: #fff;
-    padding: 0.5rem 0.75rem;
+    background: #111827;
+    color: #f9fafb;
+    padding: 0.45rem 0.75rem;
     border-radius: 6px;
     font-size: 0.75rem;
     bottom: 120%;
@@ -364,9 +514,9 @@ const globalStyles = `
     transform: translateX(-50%);
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
     z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
   }
   
   .copy-tooltip::after {
@@ -376,7 +526,7 @@ const globalStyles = `
     left: 50%;
     margin-left: -5px;
     border: 5px solid;
-    border-color: #37474f transparent transparent transparent;
+    border-color: #111827 transparent transparent transparent;
   }
   
   .copy-tooltip.show {
@@ -384,17 +534,17 @@ const globalStyles = `
   }
   
   h1, h2, h3 {
-    color: #2c3e50;
+    color: #111827;
     margin-bottom: 1.5rem;
   }
   
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 600;
-    color: #34495e;
-    border-bottom: 2px solid #e8f4f8;
+    color: #111827;
+    border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
   
   .subscription-url {
@@ -425,6 +575,7 @@ const globalStyles = `
     border: 1px solid #d1d5db;
     border-radius: 6px;
     margin-bottom: 0;
+    background: #ffffff;
   }
   
   .config-textarea {
@@ -433,64 +584,120 @@ const globalStyles = `
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.875rem;
     padding: 1.5rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
     resize: vertical;
-    background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
-    transition: all 0.3s ease;
+    background: #f9fafb;
+    transition: all 0.18s ease;
     line-height: 1.5;
+    color: #111827;
   }
   
   .config-textarea:focus {
     outline: none;
-    border-color: #1976d2;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+    background: #ffffff;
   }
   
   .config-label {
     display: block;
     margin-bottom: 0.75rem;
     font-weight: 600;
-    color: #34495e;
+    color: #111827;
     font-size: 1rem;
   }
   
   .config-item {
     margin-bottom: 2rem;
   }
-  
+
+  /* 合并预览内的子 Tab 切换 */
+  .preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .preview-sub-tabs {
+    display: flex;
+    gap: 0;
+    background: #e5e7eb;
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+  }
+  .preview-sub-tab {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6b7280;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .preview-sub-tab:hover {
+    color: #1d4ed8;
+  }
+  .preview-sub-tab.active {
+    background: #ffffff;
+    color: #1d4ed8;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .preview-editor-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .preview-copy-btn {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  #previewYamlEditor {
+    height: 420px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* 底部操作按钮：固定区域，不参与挤压 */
   .button-group {
+    flex-shrink: 0;
     display: flex;
     gap: 1rem;
-    padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-top: 1px solid #e9ecef;
-    flex-shrink: 0;
-    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+    padding: 1.25rem 2rem;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.04);
   }
   
   .fixed-bottom-buttons {
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
+    flex-shrink: 0;
   }
   
   .link-display {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: #f9fafb;
     padding: 1rem;
-    border-radius: 8px;
+    border-radius: 12px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.875rem;
     word-break: break-all;
-    border: 1px solid #d1d5db;
-    color: #495057;
+    border: 1px solid #e5e7eb;
+    color: #111827;
   }
   
   .scrollable-content {
-    overflow-y: auto;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 2rem;
+    background: #f9fafb;
   }
   
   /* 自定义滚动条 */
@@ -501,52 +708,66 @@ const globalStyles = `
   
   .scrollable-content::-webkit-scrollbar-track,
   .config-textarea::-webkit-scrollbar-track {
-    background: #f1f3f4;
+    background: #e5e7eb;
     border-radius: 4px;
   }
   
   .scrollable-content::-webkit-scrollbar-thumb,
   .config-textarea::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+    background: linear-gradient(135deg, #cbd5f5 0%, #9ca3af 100%);
     border-radius: 4px;
   }
   
   .scrollable-content::-webkit-scrollbar-thumb:hover,
   .config-textarea::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
   }
   
   @media (max-width: 768px) {
     body {
-      padding: 10px;
+      padding: 12px;
     }
     
     .container {
       margin: 0;
-      border-radius: 12px;
-      max-height: 95vh;
+      border-radius: 16px;
+      height: 96vh;
+      max-height: 96vh;
+    }
+    
+    .dashboard-header {
+      padding: 1rem 1.25rem;
+      min-height: 56px;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.25rem;
+      margin: 0;
     }
     
     .tabs {
-      flex-direction: column;
+      min-height: 48px;
+      flex-wrap: wrap;
     }
     
     .tab {
       text-align: center;
-      padding: 0.75rem;
+      padding: 0.75rem 0.5rem;
+      min-width: 72px;
     }
     
-    .dashboard-header {
-      padding: 1.5rem;
+    .tab-content-header {
+      margin-top: 0.5rem;
+      padding: 0.6rem 1.25rem;
     }
     
-    .dashboard-header h1 {
-      font-size: 1.5rem;
+    .tab-content-header h2 {
+      font-size: 1.05rem;
     }
     
     .tab-content-inner,
     .scrollable-content {
-      padding: 1rem;
+      padding: 1rem 1.1rem;
     }
     
     .button-group {
@@ -563,228 +784,299 @@ const globalStyles = `
     }
     
     .config-textarea {
-      min-height: 300px;
-      padding: 1rem;
+      min-height: 200px;
+      padding: 1.1rem;
     }
   }
 `;
 
-app.post('/login', async(c) => {
+app.post("/login", async (c) => {
   const param = await c.req.json();
-  console.debug("/login -> req:", param)
+  console.debug("/login -> req:", param);
 
   const resultObj = {
     code: 0,
     msg: "success",
-  }
+  };
 
-  const password = c.env.PASSWORD
+  const password = c.env.PASSWORD;
   if (password !== param.password) {
-    console.warn(`password not match, [${password}] != [${param.password}]`)
-    resultObj.code = 1
-    resultObj.msg = "password not match"
-    return c.json(resultObj, 401)
+    console.warn(`password not match, [${password}] != [${param.password}]`);
+    resultObj.code = 1;
+    resultObj.msg = "password not match";
+    return c.json(resultObj, 401);
   }
 
   // 设置cookie
-  const authPass = generatePasswordHash(c.env.PASSWORD, c.env.SALT)
-  setCookie(c, 'auth', authPass, {
+  const authPass = await generatePasswordHash(c.env.PASSWORD, c.env.SALT);
+  setCookie(c, "auth", authPass, {
     httpOnly: true,
     secure: true,
-    sameSite: 'Strict',
-    maxAge: 60 * 60 * 24 // 1天有效期
+    sameSite: "Strict",
+    maxAge: 60 * 60 * 24, // 1天有效期
   });
 
   // 跳转到dashboard页面
-  return c.json(resultObj)
-})
+  return c.json(resultObj);
+});
 
-app.get('/set', async (c) => {
-  const valueStr = JSON.stringify({foo: 'bar'})
-  await c.env.SUB_MERGER_KV.put('foo', valueStr)
-  return c.text(`set succ, foo=${valueStr}`)
-})
+app.get("/set", async (c) => {
+  const valueStr = JSON.stringify({ foo: "bar" });
+  await c.env.SUB_MERGER_KV.put("foo", valueStr);
+  return c.text(`set succ, foo=${valueStr}`);
+});
 
-app.get('/get', async (c) => {
-  const result = await c.env.SUB_MERGER_KV.get('foo', 'json')
-  console.debug("/get, reuslt=", result)
-  await c.env.SUB_MERGER_KV.delete('foo')
+app.get("/get", async (c) => {
+  const result = await c.env.SUB_MERGER_KV.get("foo", "json");
+  console.debug("/get, reuslt=", result);
+  await c.env.SUB_MERGER_KV.delete("foo");
 
-  const outputStr = result ? JSON.stringify(result) : ''
-  return c.text(`get succ, foo=[${outputStr}]`)
-})
+  const outputStr = result ? JSON.stringify(result) : "";
+  return c.text(`get succ, foo=[${outputStr}]`);
+});
 
 // 创建一个中间件来验证用户是否已登录
-const authMiddleware = async (c, next) => {
-  const authPass = generatePasswordHash(c.env.PASSWORD, c.env.SALT)
-  const authCookie = getCookie(c, 'auth')
+const authMiddleware = async (c: any, next: any) => {
+  const authPass = await generatePasswordHash(c.env.PASSWORD, c.env.SALT);
+  const authCookie = getCookie(c, "auth");
   if (authCookie !== authPass) {
     // 如果未登录，重定向到首页
-    deleteCookie(c, 'auth')
-    return c.redirect('/')
+    deleteCookie(c, "auth");
+    return c.redirect("/");
   }
   // 如果已登录，继续执行下一个中间件或路由处理器
-  await next()
+  await next();
 };
 
 // 将中间件应用到需要身份验证的路由
-app.use('/dashboard', authMiddleware)
-app.use('/api/*', authMiddleware)
+app.use("/dashboard", authMiddleware);
+app.use("/api/*", authMiddleware);
 
-async function GetSubYamlWithCache(subType: SubscriptionType, env: Bindings, noCache: boolean = false): Promise<FinalObj> {
-  console.debug("GetSubYamlWithCache, subType=", subType, "noCache=", noCache)
+async function GetSubYamlWithCache(
+  subType: SubscriptionType,
+  env: Bindings,
+  noCache: boolean = false,
+): Promise<FinalObj> {
+  console.debug("GetSubYamlWithCache, subType=", subType, "noCache=", noCache);
 
-  const cacheKey = `${env.TABLENAME}:${env.KEY_VERSION}:cacheObj:${subType}`
+  const cacheKey = `${env.TABLENAME}:${env.KEY_VERSION}:cacheObj:${subType}`;
 
   if (!noCache) {
     // 优先从缓存中获取
-    console.debug("===== 1. 优先从缓存中获取 ======")
-    const subCacheObj = await env.SUB_MERGER_KV.get(cacheKey, "json")
+    console.debug("===== 1. 优先从缓存中获取 ======");
+    const subCacheObj = (await env.SUB_MERGER_KV.get(
+      cacheKey,
+      "json",
+    )) as FinalObj;
     if (subCacheObj) {
-      console.debug("===== 2. 从缓存中获取成功 ======")
-      return subCacheObj
+      console.debug("===== 2. 从缓存中获取成功 ======");
+      return subCacheObj;
     }
   }
 
   const finalObj: FinalObj = {
     subUserInfo: {
       upload: 0,
-        download: 0,
-        total: 0,
-        expire: 9999999999,
+      download: 0,
+      total: 0,
+      expire: 9999999999,
     },
-    normalYaml: '',
-    stashYaml: '',
-  }
+    normalYaml: "",
+    stashYaml: "",
+  };
 
   // 没有缓存，或者要求不从缓存获取
-  const subData = await env.SUB_MERGER_KV.get(env.TABLENAME, "json")
+  const subData = (await env.SUB_MERGER_KV.get(env.TABLENAME, "json")) as any;
   if (!subData) {
     // 没有配置订阅源
-    finalObj.normalYaml = '# 没有配置订阅源（通用）'
-    finalObj.stashYaml = '# 没有配置订阅源（Stash）'
-    return finalObj
+    finalObj.normalYaml = "# 没有配置订阅源（通用）";
+    finalObj.stashYaml = "# 没有配置订阅源（Stash）";
+    return finalObj;
   }
 
-  const allTarget = subData.filter(sub => sub.subType === subType)
+  const allTarget = subData.filter((sub: any) => sub.subType === subType);
   if (allTarget.length === 0) {
     // 没有匹配类型的订阅源
-    finalObj.normalYaml = `# 没有配置该类型的订阅源（通用）：${subType}`
-    finalObj.stashYaml = `# 没有配置该类型的订阅源（Stash）：${subType}`
-    return finalObj
+    finalObj.normalYaml = `# 没有配置该类型的订阅源（通用）：${subType}`;
+    finalObj.stashYaml = `# 没有配置该类型的订阅源（Stash）：${subType}`;
+    return finalObj;
   }
 
-  const [subuserInfo, totalNode] = await getSubscribeYaml(allTarget, env)
-  const {normalYaml, stashYaml} = await generateProxyConfigYaml(totalNode, subType === SubscriptionType.Monthly ? env.SUBSCRIBE_PATTERN : env.ONETIME_PATTERN, env)
-  const defaultYaml = await getDefaultYaml(env)
-  finalObj.normalYaml = `# 最后更新时间（通用）：${dayjs().tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')}\n\n` + normalYaml + defaultYaml
-  finalObj.stashYaml = `# 最后更新时间（Stash）：${dayjs().tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')}\n\n` + stashYaml + defaultYaml
-  finalObj.subUserInfo = subuserInfo
+  const [subuserInfo, totalNode] = await getSubscribeYaml(allTarget, env);
+  const { normalYaml, stashYaml } = await generateProxyConfigYaml(
+    totalNode,
+    subType === SubscriptionType.Monthly
+      ? env.SUBSCRIBE_PATTERN
+      : env.ONETIME_PATTERN,
+    env,
+  );
+  const defaultYaml = await getDefaultYaml(env);
+  finalObj.normalYaml =
+    `# 最后更新时间（通用）：${dayjs().tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss")}\n\n` +
+    normalYaml +
+    defaultYaml;
+  finalObj.stashYaml =
+    `# 最后更新时间（Stash）：${dayjs().tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss")}\n\n` +
+    stashYaml +
+    defaultYaml;
+  finalObj.subUserInfo = subuserInfo;
 
   // 设置缓存
-  await env.SUB_MERGER_KV.put(cacheKey, JSON.stringify(finalObj))
+  await env.SUB_MERGER_KV.put(cacheKey, JSON.stringify(finalObj));
 
-  return finalObj
+  return finalObj;
 }
 
-app.get('/onetime/:magic', async (c) => {
-  const magic = c.req.param('magic')
+app.get("/onetime/:magic", async (c) => {
+  const magic = c.req.param("magic");
   if (magic !== c.env.MAGIC) {
-    return c.text('magic not match', 403)
+    return c.text("magic not match", 403);
   }
 
-  console.debug(`/onetime -> User-Agent=[${c.req.header('user-agent')}]`)
+  console.debug(`/onetime -> User-Agent=[${c.req.header("user-agent")}]`);
 
-  const instantRefreshInterval = c.env.INSTANT_REFRESH_INTERVAL ? parseInt(c.env.INSTANT_REFRESH_INTERVAL) : 300
-  const currTimeStamp = dayjs().unix()
-  const subType = SubscriptionType.TrafficPackage
+  const instantRefreshInterval = c.env.INSTANT_REFRESH_INTERVAL
+    ? parseInt(c.env.INSTANT_REFRESH_INTERVAL)
+    : 300;
+  const currTimeStamp = dayjs().unix();
+  const subType = SubscriptionType.TrafficPackage;
 
   // 获取上次访问接口的时间
-  const accessKey = `${c.env.TABLENAME}:${c.env.KEY_VERSION}:access:${subType}`
-  const lastAccessObj = await c.env.SUB_MERGER_KV.get(accessKey, "json")
-  const lastAccessTimeStamp = lastAccessObj?.lastAccessTimeStamp || 0
-  const diff = currTimeStamp - lastAccessTimeStamp
-  const noCache = diff < instantRefreshInterval
+  const accessKey = `${c.env.TABLENAME}:${c.env.KEY_VERSION}:access:${subType}`;
+  const lastAccessObj = (await c.env.SUB_MERGER_KV.get(
+    accessKey,
+    "json",
+  )) as any;
+  const lastAccessTimeStamp = lastAccessObj?.lastAccessTimeStamp || 0;
+  const diff = currTimeStamp - lastAccessTimeStamp;
+  const noCache = diff < instantRefreshInterval;
 
-  console.debug("GetSubYamlWithCache, subType=", subType, "noCache=", noCache, "instantRefreshInterval=", instantRefreshInterval, 
-    "currTimeStamp=", currTimeStamp, "lastAccessTimeStamp=", lastAccessTimeStamp, "diff=", diff)
+  console.debug(
+    "GetSubYamlWithCache, subType=",
+    subType,
+    "noCache=",
+    noCache,
+    "instantRefreshInterval=",
+    instantRefreshInterval,
+    "currTimeStamp=",
+    currTimeStamp,
+    "lastAccessTimeStamp=",
+    lastAccessTimeStamp,
+    "diff=",
+    diff,
+  );
 
   // 获取订阅数据
-  const finalObj = await GetSubYamlWithCache(subType, c.env, noCache)
+  const finalObj = await GetSubYamlWithCache(subType, c.env, noCache);
 
   // 更新访问时间
-  const lastAccessStr = JSON.stringify({lastAccessTimeStamp: currTimeStamp})
-  await c.env.SUB_MERGER_KV.put(accessKey, lastAccessStr)
+  const lastAccessStr = JSON.stringify({ lastAccessTimeStamp: currTimeStamp });
+  await c.env.SUB_MERGER_KV.put(accessKey, lastAccessStr);
 
   // 设置流量和使用时长信息
-  c.header('subscription-userinfo', generateSubscriptionUserInfoString(finalObj.subUserInfo))
+  c.header(
+    "subscription-userinfo",
+    generateSubscriptionUserInfoString(finalObj.subUserInfo),
+  );
 
-  // 设置文件名
-  const fileName = encodeURIComponent(`流量包（订阅合并）`)
-  c.header('Content-Disposition', `attachment; filename*=UTF-8''${fileName}`)
+  // 是否预览模式（不触发下载）
+  const previewParam = c.req.query("preview");
+  const isPreview = previewParam === "1" || previewParam === "true";
+
+  // 非预览模式时设置下载文件名
+  if (!isPreview) {
+    const fileName = encodeURIComponent(`流量包（订阅合并）`);
+    c.header("Content-Disposition", `attachment; filename*=UTF-8''${fileName}`);
+  }
 
   // 检查user-agent是否包含Stash
-  const userAgent = c.req.header('user-agent') || '';
-  if (userAgent.toLowerCase().includes('stash')) {
+  const userAgent = c.req.header("user-agent") || "";
+  if (userAgent.toLowerCase().includes("stash")) {
     // 如果包含Stash，进行节点过滤
-    return c.text(finalObj.stashYaml)
+    return c.text(finalObj.stashYaml);
   }
 
-  return c.text(finalObj.normalYaml)
-})
+  return c.text(finalObj.normalYaml);
+});
 
-app.get('/subscribe/:magic', async (c) => {
-  const magic = c.req.param('magic')
+app.get("/subscribe/:magic", async (c) => {
+  const magic = c.req.param("magic");
   if (magic !== c.env.MAGIC) {
-    return c.text('magic not match', 403)
+    return c.text("magic not match", 403);
   }
-  console.debug(`/subscribe -> User-Agent=[${c.req.header('user-agent')}]`)
+  console.debug(`/subscribe -> User-Agent=[${c.req.header("user-agent")}]`);
 
-  const instantRefreshInterval = c.env.INSTANT_REFRESH_INTERVAL ? parseInt(c.env.INSTANT_REFRESH_INTERVAL) : 300
-  const currTimeStamp = dayjs().unix()
-  const subType = SubscriptionType.Monthly
+  const instantRefreshInterval = c.env.INSTANT_REFRESH_INTERVAL
+    ? parseInt(c.env.INSTANT_REFRESH_INTERVAL)
+    : 300;
+  const currTimeStamp = dayjs().unix();
+  const subType = SubscriptionType.Monthly;
 
   // 获取上次访问接口的时间
-  const accessKey = `${c.env.TABLENAME}:${c.env.KEY_VERSION}:access:${subType}`
-  const lastAccessObj = await c.env.SUB_MERGER_KV.get(accessKey, "json")
-  const lastAccessTimeStamp = lastAccessObj?.lastAccessTimeStamp || 0
-  const diff = currTimeStamp - lastAccessTimeStamp
-  const noCache = diff < instantRefreshInterval
+  const accessKey = `${c.env.TABLENAME}:${c.env.KEY_VERSION}:access:${subType}`;
+  const lastAccessObj = (await c.env.SUB_MERGER_KV.get(
+    accessKey,
+    "json",
+  )) as any;
+  const lastAccessTimeStamp = lastAccessObj?.lastAccessTimeStamp || 0;
+  const diff = currTimeStamp - lastAccessTimeStamp;
+  const noCache = diff < instantRefreshInterval;
 
-  console.debug("GetSubYamlWithCache, subType=", subType, "noCache=", noCache, "instantRefreshInterval=", instantRefreshInterval, 
-    "currTimeStamp=", currTimeStamp, "lastAccessTimeStamp=", lastAccessTimeStamp, "diff=", diff)
+  console.debug(
+    "GetSubYamlWithCache, subType=",
+    subType,
+    "noCache=",
+    noCache,
+    "instantRefreshInterval=",
+    instantRefreshInterval,
+    "currTimeStamp=",
+    currTimeStamp,
+    "lastAccessTimeStamp=",
+    lastAccessTimeStamp,
+    "diff=",
+    diff,
+  );
 
   // 获取订阅数据
-  const finalObj = await GetSubYamlWithCache(subType, c.env, noCache)
+  const finalObj = await GetSubYamlWithCache(subType, c.env, noCache);
 
   // 更新访问时间
-  const lastAccessStr = JSON.stringify({lastAccessTimeStamp: currTimeStamp})
-  await c.env.SUB_MERGER_KV.put(accessKey, lastAccessStr)
+  const lastAccessStr = JSON.stringify({ lastAccessTimeStamp: currTimeStamp });
+  await c.env.SUB_MERGER_KV.put(accessKey, lastAccessStr);
 
   // 设置流量和使用时长信息
-  c.header('subscription-userinfo', generateSubscriptionUserInfoString(finalObj.subUserInfo))
+  c.header(
+    "subscription-userinfo",
+    generateSubscriptionUserInfoString(finalObj.subUserInfo),
+  );
 
-  // 设置文件名
-  const fileName = encodeURIComponent(`包年包月（订阅合并)`)
-  c.header('Content-Disposition', `attachment; filename*=UTF-8''${fileName}`)
+  // 是否预览模式（不触发下载）
+  const previewParam = c.req.query("preview");
+  const isPreview = previewParam === "1" || previewParam === "true";
 
-  // 检查user-agent是否包含Stash
-  const userAgent = c.req.header('user-agent') || '';
-  if (userAgent.toLowerCase().includes('stash')) {
-    // 如果包含Stash，进行节点过滤
-    return c.text(finalObj.stashYaml)
+  // 非预览模式时设置下载文件名
+  if (!isPreview) {
+    const fileName = encodeURIComponent(`包年包月（订阅合并)`);
+    c.header("Content-Disposition", `attachment; filename*=UTF-8''${fileName}`);
   }
 
-  return c.text(finalObj.normalYaml)
-})
+  // 检查user-agent是否包含Stash
+  const userAgent = c.req.header("user-agent") || "";
+  if (userAgent.toLowerCase().includes("stash")) {
+    // 如果包含Stash，进行节点过滤
+    return c.text(finalObj.stashYaml);
+  }
 
-app.get('/', (c) => { 
+  return c.text(finalObj.normalYaml);
+});
+
+app.get("/", async (c) => {
   // 检查cookie中的auth状态
-  const authPass = generatePasswordHash(c.env.PASSWORD, c.env.SALT)
-  const authCookie = getCookie(c, 'auth')
+  const authPass = await generatePasswordHash(c.env.PASSWORD, c.env.SALT);
+  const authCookie = getCookie(c, "auth");
   if (authCookie === authPass) {
     // 如果已经验证通过，直接跳转到dashboard页面
-    return c.redirect('/dashboard')
+    return c.redirect("/dashboard");
   }
 
   return c.html(`
@@ -793,16 +1085,42 @@ app.get('/', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>登录</title>
+      <title>Sub Merger 登录</title>
       <style>${globalStyles}</style>
     </head>
     <body>
-      <div class="container">
-        <form class="form" id="loginForm">
-          <input type="password" id="password" placeholder="请输入密码" required>
-          <button type="submit">登录</button>
-          <div id="errorMessage" class="error-message"></div>
-        </form>
+      <div class="auth-page">
+        <div class="auth-card">
+          <div class="auth-inner">
+            <div class="auth-meta">
+              <div class="auth-badge">
+                <span class="auth-badge-dot"></span>
+                已启用 Cloudflare Worker
+              </div>
+            </div>
+            <h1 class="auth-title">
+              <span class="logo-dot">S</span>
+              Sub Merger 控制台
+            </h1>
+            <p class="auth-subtitle">
+              统一管理你的 Clash / Stash 订阅源，自动合并规则与自建节点。请输入后台访问密码继续。
+            </p>
+            <form class="form" id="loginForm">
+              <input
+                type="password"
+                id="password"
+                placeholder="输入后台访问密码"
+                autocomplete="current-password"
+                required
+              >
+              <button type="submit">进入控制台</button>
+              <div id="errorMessage" class="error-message"></div>
+            </form>
+            <div class="auth-footer">
+              Sub-Merger · 运行于 Cloudflare Workers
+            </div>
+          </div>
+        </div>
       </div>
       <script>
         function showError(message) {
@@ -842,17 +1160,15 @@ app.get('/', (c) => {
       </script>
     </body>
     </html>
-  `)
-})
+  `);
+});
 
+app.get("/dashboard", async (c) => {
+  const subData = await c.env.SUB_MERGER_KV.get(c.env.TABLENAME, "json");
+  const subscriptions = subData || []; //[{subName: '机场1', subType: '包年/包月', subUrl: 'https://example.com/sub1'}, {subName: '机场2', subType: '流量包', subUrl: 'https://example.com/sub2'}]
 
-app.get('/dashboard', async (c) => {
-  
-  const subData = await c.env.SUB_MERGER_KV.get(c.env.TABLENAME, "json")
-  const subscriptions = subData || [] //[{subName: '机场1', subType: '包年/包月', subUrl: 'https://example.com/sub1'}, {subName: '机场2', subType: '流量包', subUrl: 'https://example.com/sub2'}]
-
-  const magic = c.env.MAGIC
-  const suffix = magic ? `/${magic}` : ''
+  const magic = c.env.MAGIC;
+  const suffix = magic ? `/${magic}` : "";
 
   // 步骤1: 将subscriptions转换为JavaScript数组字符串
   const subscriptionsScript = `
@@ -870,6 +1186,64 @@ app.get('/dashboard', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订阅管理控制台</title>
     <style>${globalStyles}</style>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+    <script>
+      // 初始化 Monaco Editor（用于 YAML 配置和自建节点 JSON）
+      function initMonacoEditor() {
+        if (!window.require) {
+          console.error('Monaco loader 未加载');
+          return;
+        }
+        window.require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' } });
+        window.require(['vs/editor/editor.main'], function () {
+          const yamlTextarea = document.getElementById('defaultYamlConfig');
+          const yamlEditorContainer = document.getElementById('defaultYamlEditor');
+          const selfNodeTextarea = document.getElementById('selfNodeConfig');
+          const selfNodeEditorContainer = document.getElementById('selfNodeEditor');
+
+          // YAML 编辑器
+          if (yamlEditorContainer) {
+            const initialYamlValue = yamlTextarea ? yamlTextarea.value : '';
+            window.defaultYamlEditor = monaco.editor.create(yamlEditorContainer, {
+              value: initialYamlValue,
+              language: 'yaml',
+              automaticLayout: true,
+              theme: 'vs-dark',
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+            });
+          }
+
+          // 自建节点 JSON 编辑器
+          if (selfNodeEditorContainer) {
+            const initialSelfNodeValue = selfNodeTextarea ? selfNodeTextarea.value : '';
+            window.selfNodeEditor = monaco.editor.create(selfNodeEditorContainer, {
+              value: initialSelfNodeValue,
+              language: 'json',
+              automaticLayout: true,
+              theme: 'vs-dark',
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+            });
+          }
+
+          // 合并预览 YAML 编辑器（只读）
+          const previewEditorContainer = document.getElementById('previewYamlEditor');
+          if (previewEditorContainer) {
+            window.previewYamlEditor = monaco.editor.create(previewEditorContainer, {
+              value: '# 点击下方刷新按钮加载预览',
+              language: 'yaml',
+              readOnly: true,
+              automaticLayout: true,
+              theme: 'vs-dark',
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+            });
+            if (typeof updatePreviewEditorValue === 'function') updatePreviewEditorValue();
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <div class="container">
@@ -881,6 +1255,7 @@ app.get('/dashboard', async (c) => {
         <button class="tab active" onclick="switchTab('subscriptions')">📋 订阅管理</button>
         <button class="tab" onclick="switchTab('nodes')">🔧 自建节点</button>
         <button class="tab" onclick="switchTab('yaml')">⚙️ YAML配置</button>
+        <button class="tab" onclick="switchTab('preview')">👀 合并预览</button>
         <button class="tab" onclick="switchTab('links')">🔗 订阅链接</button>
       </div>
       
@@ -922,7 +1297,7 @@ app.get('/dashboard', async (c) => {
               🖥️ 自建节点配置 (JSON格式)
               <small style="color: #6c757d; font-weight: normal;">配置你的自建代理节点，支持各种协议</small>
             </label>
-            <textarea id="selfNodeConfig" class="config-textarea" placeholder="请输入自建节点的JSON配置，例如：
+            <textarea id="selfNodeConfig" class="config-textarea" style="display:none;" placeholder="请输入自建节点的JSON配置，例如：
 [
   {
     &quot;name&quot;: &quot;自建节点1&quot;,
@@ -950,6 +1325,7 @@ app.get('/dashboard', async (c) => {
     &quot;tls&quot;: true
   }
 ]"></textarea>
+            <div id="selfNodeEditor" class="config-textarea" style="height: 520px; padding: 0;"></div>
           </div>
         </div>
         <div class="button-group fixed-bottom-buttons">
@@ -968,7 +1344,7 @@ app.get('/dashboard', async (c) => {
               📝 默认YAML规则配置
               <small style="color: #6c757d; font-weight: normal;">配置DNS、规则提供者和路由规则</small>
             </label>
-            <textarea id="defaultYamlConfig" class="config-textarea" placeholder="请输入默认的YAML规则配置，例如：
+            <textarea id="defaultYamlConfig" class="config-textarea" style="display:none;" placeholder="请输入默认的YAML规则配置，例如：
 dns:
   enable: true
   listen: 0.0.0.0:53
@@ -1047,10 +1423,38 @@ rules:
   - RULE-SET,cncidr,DIRECT
   - GEOIP,CN,DIRECT
   - MATCH,节点选择"></textarea>
+            <div id="defaultYamlEditor" class="config-textarea" style="height: 520px; padding: 0;"></div>
           </div>
         </div>
         <div class="button-group fixed-bottom-buttons">
           <button class="btn btn-save" onclick="saveConfig()">💾 保存YAML配置</button>
+        </div>
+      </div>
+
+      <!-- 合并预览标签页 -->
+      <div id="preview" class="tab-content">
+        <div class="tab-content-header">
+          <h2>合并结果预览</h2>
+        </div>
+        <div class="scrollable-content">
+          <div class="config-item">
+            <div class="preview-toolbar">
+              <div class="preview-sub-tabs">
+                <button type="button" class="preview-sub-tab active" id="previewSubTabMonthly" onclick="switchPreviewSubTab('monthly')">📅 包年/包月（通用）</button>
+                <button type="button" class="preview-sub-tab" id="previewSubTabOnetime" onclick="switchPreviewSubTab('onetime')">📦 流量包（通用）</button>
+              </div>
+              <button type="button" class="btn btn-copy preview-copy-btn" onclick="copyPreviewLink(this)" title="复制当前预览对应的订阅链接">
+                📋 复制订阅链接
+                <span class="copy-tooltip">已复制!</span>
+              </button>
+            </div>
+            <div class="preview-editor-wrap">
+              <div id="previewYamlEditor" class="config-textarea" style="padding: 0;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="button-group fixed-bottom-buttons">
+          <button class="btn btn-save" onclick="refreshPreview()">🔄 刷新预览（强制重新拉取）</button>
         </div>
       </div>
       
@@ -1300,7 +1704,17 @@ rules:
           .then(data => {
             if (data.code === 0) {
               document.getElementById('selfNodeConfig').value = data.data.selfNodeData || '';
-              document.getElementById('defaultYamlConfig').value = data.data.defaultYaml || '';
+              if (window.selfNodeEditor && typeof window.selfNodeEditor.setValue === 'function') {
+                window.selfNodeEditor.setValue(data.data.selfNodeData || '');
+              }
+              const defaultYaml = data.data.defaultYaml || '';
+              const defaultYamlTextarea = document.getElementById('defaultYamlConfig');
+              if (defaultYamlTextarea) {
+                defaultYamlTextarea.value = defaultYaml;
+              }
+              if (window.defaultYamlEditor && typeof window.defaultYamlEditor.setValue === 'function') {
+                window.defaultYamlEditor.setValue(defaultYaml);
+              }
             } else {
               console.error('加载配置失败:', data.msg);
             }
@@ -1311,8 +1725,20 @@ rules:
       }
 
       function saveConfig() {
-        const selfNodeData = document.getElementById('selfNodeConfig').value.trim();
-        const defaultYaml = document.getElementById('defaultYamlConfig').value.trim();
+        let selfNodeData = '';
+        if (window.selfNodeEditor) {
+          selfNodeData = window.selfNodeEditor.getValue().trim();
+        } else {
+          const selfNodeTextarea = document.getElementById('selfNodeConfig');
+          selfNodeData = selfNodeTextarea ? selfNodeTextarea.value.trim() : '';
+        }
+        let defaultYaml = '';
+        if (window.defaultYamlEditor) {
+          defaultYaml = window.defaultYamlEditor.getValue().trim();
+        } else {
+          const textarea = document.getElementById('defaultYamlConfig');
+          defaultYaml = textarea ? textarea.value.trim() : '';
+        }
 
         // 验证自建节点配置是否为有效JSON（如果不为空）
         if (selfNodeData) {
@@ -1358,10 +1784,93 @@ rules:
         });
       }
 
+      let previewMonthlyYaml = '';
+      let previewOnetimeYaml = '';
+      let currentPreviewSubTab = 'monthly';
+
+      function updatePreviewEditorValue() {
+        if (window.previewYamlEditor) {
+          const text = currentPreviewSubTab === 'monthly' ? previewMonthlyYaml : previewOnetimeYaml;
+          window.previewYamlEditor.setValue(text || '# 暂无数据，请点击下方刷新按钮');
+        }
+      }
+
+      function switchPreviewSubTab(type) {
+        currentPreviewSubTab = type;
+        document.getElementById('previewSubTabMonthly').classList.toggle('active', type === 'monthly');
+        document.getElementById('previewSubTabOnetime').classList.toggle('active', type === 'onetime');
+        updatePreviewEditorValue();
+      }
+
+      function copyPreviewLink(button) {
+        const id = currentPreviewSubTab === 'monthly' ? 'subscribeLink' : 'onetimeLink';
+        const el = document.getElementById(id);
+        const text = el ? el.textContent.trim() : '';
+        if (!text) {
+          alert('链接未就绪，请稍候再试');
+          return;
+        }
+        navigator.clipboard.writeText(text).then(function () {
+          var tip = button.querySelector('.copy-tooltip');
+          if (tip) { tip.classList.add('show'); setTimeout(function () { tip.classList.remove('show'); }, 2000); }
+        }, function () {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand('copy');
+            var tip = button.querySelector('.copy-tooltip');
+            if (tip) { tip.classList.add('show'); setTimeout(function () { tip.classList.remove('show'); }, 2000); }
+          } catch (e) { alert('复制失败，请手动复制'); }
+          document.body.removeChild(ta);
+        });
+      }
+
+      function loadPreview(forceRefresh) {
+        const noCacheParam = forceRefresh ? '&noCache=1' : '';
+
+        fetch('/api/preview?type=monthly' + noCacheParam)
+          .then(response => response.json())
+          .then(data => {
+            if (data.code === 0) {
+              previewMonthlyYaml = data.data.normalYaml || '';
+              if (currentPreviewSubTab === 'monthly') updatePreviewEditorValue();
+            }
+          })
+          .catch(error => {
+            console.error('加载包年/包月预览出错:', error);
+          });
+
+        fetch('/api/preview?type=onetime' + noCacheParam)
+          .then(response => response.json())
+          .then(data => {
+            if (data.code === 0) {
+              previewOnetimeYaml = data.data.normalYaml || '';
+              if (currentPreviewSubTab === 'onetime') updatePreviewEditorValue();
+            }
+          })
+          .catch(error => {
+            console.error('加载流量包预览出错:', error);
+          });
+      }
+
+      function refreshPreview() {
+        loadPreview(true);
+      }
+
       // 页面加载完成后初始化
       renderTable();
       updateMergedLinks();
       loadConfig();
+      loadPreview(false);
+      window.addEventListener('load', () => {
+        try {
+          initMonacoEditor();
+        } catch (e) {
+          console.error('初始化 Monaco 失败:', e);
+        }
+      });
     </script>
   </body>
   </html>
@@ -1371,85 +1880,104 @@ rules:
   return c.html(subscriptionsScript + mainHtml);
 });
 
-app.post('/api/save', async (c) => {
+app.post("/api/save", async (c) => {
   const param = await c.req.json();
-  console.debug("/api/save -> req:", param)
+  console.debug("/api/save -> req:", param);
 
   const resultObj = {
     code: 0,
     msg: "success",
-  }
+  };
 
-  const subscriptions = param.subscriptions
+  const subscriptions = param.subscriptions;
   if (!subscriptions || subscriptions.length === 0) {
-    console.warn("no subscriptions or empty", param)
-    resultObj.code = 1
-    resultObj.msg = "no subscriptions or empty"
-    return c.json(resultObj, 400)
+    console.warn("no subscriptions or empty", param);
+    resultObj.code = 1;
+    resultObj.msg = "no subscriptions or empty";
+    return c.json(resultObj, 400);
   }
 
   // 过滤一下字段前后可能存在的空格/回车
-  const realSubscriptions = subscriptions.map(sub => {
-    sub.subName = sub.subName.trim()
-    sub.subType = sub.subType.trim()
-    sub.subUrl = sub.subUrl.trim()
-    return sub
-  })
+  const realSubscriptions = subscriptions.map((sub: any) => {
+    sub.subName = sub.subName.trim();
+    sub.subType = sub.subType.trim();
+    sub.subUrl = sub.subUrl.trim();
+    return sub;
+  });
 
-  await c.env.SUB_MERGER_KV.put(c.env.TABLENAME, JSON.stringify(realSubscriptions));
+  await c.env.SUB_MERGER_KV.put(
+    c.env.TABLENAME,
+    JSON.stringify(realSubscriptions),
+  );
 
   return c.json(resultObj, 200);
 });
 
-app.get('/api/config', async (c) => {
-  const configKey = `${c.env.TABLENAME}:config`
-  const config = await c.env.SUB_MERGER_KV.get(configKey, "json")
-  
+app.get("/api/config", async (c) => {
+  const configKey = `${c.env.TABLENAME}:config`;
+  const rawConfig = (await c.env.SUB_MERGER_KV.get(configKey, "json")) as any;
+
   // 获取默认值作为备用
-  const { getDefaultSelfNodeData } = await import('./data/selfNodeData')
-  const { getDefaultYamlString } = await import('./data/defaultYmal')
-  
+  const { getDefaultSelfNodeData } = await import("./data/selfNodeData");
+  const { getDefaultYamlString } = await import("./data/defaultYmal");
+
+  const defaultSelfNodeData = getDefaultSelfNodeData();
+  const defaultYamlString = getDefaultYamlString();
+
+  const config = (rawConfig || {}) as any;
+
+  const finalConfig = {
+    ...config,
+    selfNodeData:
+      typeof config.selfNodeData === "string" &&
+      config.selfNodeData.trim().length > 0
+        ? config.selfNodeData
+        : defaultSelfNodeData,
+    defaultYaml:
+      typeof config.defaultYaml === "string" &&
+      config.defaultYaml.trim().length > 0
+        ? config.defaultYaml
+        : defaultYamlString,
+  };
+
   return c.json({
     code: 0,
-    data: config || {
-      selfNodeData: getDefaultSelfNodeData(),
-      defaultYaml: getDefaultYamlString()
-    }
-  })
+    data: finalConfig,
+  });
 });
 
-app.post('/api/config', async (c) => {
+app.post("/api/config", async (c) => {
   const param = await c.req.json();
-  console.debug("/api/config -> req:", param)
+  console.debug("/api/config -> req:", param);
 
   const resultObj = {
     code: 0,
     msg: "success",
-  }
+  };
 
   const { selfNodeData, defaultYaml } = param;
-  
+
   if (selfNodeData === undefined || defaultYaml === undefined) {
-    resultObj.code = 1
-    resultObj.msg = "selfNodeData and defaultYaml are required"
-    return c.json(resultObj, 400)
+    resultObj.code = 1;
+    resultObj.msg = "selfNodeData and defaultYaml are required";
+    return c.json(resultObj, 400);
   }
 
   const config = {
     selfNodeData: selfNodeData.trim(),
     defaultYaml: defaultYaml.trim(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
-  const configKey = `${c.env.TABLENAME}:config`
+  const configKey = `${c.env.TABLENAME}:config`;
   await c.env.SUB_MERGER_KV.put(configKey, JSON.stringify(config));
 
   // 清理缓存，强制重新生成配置
   const cacheKeys = [
     `${c.env.TABLENAME}:${c.env.KEY_VERSION}:cacheObj:${SubscriptionType.Monthly}`,
-    `${c.env.TABLENAME}:${c.env.KEY_VERSION}:cacheObj:${SubscriptionType.TrafficPackage}`
+    `${c.env.TABLENAME}:${c.env.KEY_VERSION}:cacheObj:${SubscriptionType.TrafficPackage}`,
   ];
-  
+
   for (const key of cacheKeys) {
     await c.env.SUB_MERGER_KV.delete(key);
   }
@@ -1457,19 +1985,46 @@ app.post('/api/config', async (c) => {
   return c.json(resultObj, 200);
 });
 
+app.get("/api/preview", async (c) => {
+  const type = c.req.query("type") || "monthly";
+  const noCacheParam = c.req.query("noCache");
+  const noCache = noCacheParam === "1" || noCacheParam === "true";
+
+  let subType: SubscriptionType;
+  if (type === "onetime") {
+    subType = SubscriptionType.TrafficPackage;
+  } else {
+    subType = SubscriptionType.Monthly;
+  }
+
+  const finalObj = await GetSubYamlWithCache(subType, c.env, noCache);
+
+  return c.json({
+    code: 0,
+    data: {
+      normalYaml: finalObj.normalYaml,
+      stashYaml: finalObj.stashYaml,
+      subUserInfo: finalObj.subUserInfo,
+    },
+  });
+});
 
 // 定时任务
-async function scheduled(batch, env: Bindings) {
-  console.log("===== scheduled begin =====")
-  
-  // 不使用缓存获取订阅信息
-  let finalYaml = await GetSubYamlWithCache(SubscriptionType.TrafficPackage, env, true)
-  finalYaml = await GetSubYamlWithCache(SubscriptionType.Monthly, env, true)
+async function scheduled(batch: any, env: Bindings) {
+  console.log("===== scheduled begin =====");
 
-  console.log("===== scheduled end =====")
+  // 不使用缓存获取订阅信息
+  let finalYaml = await GetSubYamlWithCache(
+    SubscriptionType.TrafficPackage,
+    env,
+    true,
+  );
+  finalYaml = await GetSubYamlWithCache(SubscriptionType.Monthly, env, true);
+
+  console.log("===== scheduled end =====");
 }
 
 export default {
   fetch: app.fetch,
   scheduled: scheduled,
-}
+};
