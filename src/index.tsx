@@ -8,6 +8,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 import { SubscriptionType } from "./types/types";
+import pkg from "../package.json";
 import type { FinalObj } from "./types/types";
 
 import { generatePasswordHash } from "./utils/passwordMgr";
@@ -251,10 +252,41 @@ const globalStyles = `
   
   .dashboard-header h1 {
     margin: 0 0 6px;
-    font-size: 1.8rem;
-    font-weight: 500;
     position: relative;
     z-index: 1;
+  }
+
+  .dashboard-title {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 1.9rem;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+  }
+
+  .dashboard-title-text {
+    background: linear-gradient(120deg, #e5e7eb, #ffffff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.3),
+      0 0 20px rgba(191, 219, 254, 0.4);
+  }
+
+  .dashboard-title-icon {
+    filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.35));
+  }
+
+  .dashboard-title-version {
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.15);
+    border: 1px solid rgba(191, 219, 254, 0.6);
+    color: #e5e7eb;
   }
   
   .dashboard-header p {
@@ -1248,7 +1280,11 @@ app.get("/dashboard", async (c) => {
   <body>
     <div class="container">
       <div class="dashboard-header">
-        <h1>🚀 订阅管理控制台</h1>
+        <h1 class="dashboard-title">
+          <span class="dashboard-title-icon">🚀</span>
+          <span class="dashboard-title-text">订阅管理控制台</span>
+          <span class="dashboard-title-version">v${pkg.version}</span>
+        </h1>
       </div>
       
       <div class="tabs">
@@ -1297,34 +1333,12 @@ app.get("/dashboard", async (c) => {
               🖥️ 自建节点配置 (JSON格式)
               <small style="color: #6c757d; font-weight: normal;">配置你的自建代理节点，支持各种协议</small>
             </label>
-            <textarea id="selfNodeConfig" class="config-textarea" style="display:none;" placeholder="请输入自建节点的JSON配置，例如：
-[
-  {
-    &quot;name&quot;: &quot;自建节点1&quot;,
-    &quot;type&quot;: &quot;ss&quot;,
-    &quot;server&quot;: &quot;your-server.com&quot;,
-    &quot;port&quot;: 8388,
-    &quot;cipher&quot;: &quot;aes-256-gcm&quot;,
-    &quot;password&quot;: &quot;your-password&quot;
-  },
-  {
-    &quot;name&quot;: &quot;自建节点2&quot;,
-    &quot;type&quot;: &quot;vmess&quot;,
-    &quot;server&quot;: &quot;your-server2.com&quot;,
-    &quot;port&quot;: 443,
-    &quot;uuid&quot;: &quot;your-uuid&quot;,
-    &quot;alterId&quot;: 0,
-    &quot;cipher&quot;: &quot;auto&quot;,
-    &quot;network&quot;: &quot;ws&quot;,
-    &quot;ws-opts&quot;: {
-      &quot;path&quot;: &quot;/path&quot;,
-      &quot;headers&quot;: {
-        &quot;Host&quot;: &quot;your-server2.com&quot;
-      }
-    },
-    &quot;tls&quot;: true
-  }
-]"></textarea>
+            <textarea
+              id="selfNodeConfig"
+              class="config-textarea"
+              style="display:none;"
+              placeholder="请输入自建节点的 JSON 配置；留空时将不添加自建节点"
+            ></textarea>
             <div id="selfNodeEditor" class="config-textarea" style="height: 520px; padding: 0;"></div>
           </div>
         </div>
@@ -1344,58 +1358,12 @@ app.get("/dashboard", async (c) => {
               📝 默认YAML规则配置
               <small style="color: #6c757d; font-weight: normal;">配置DNS、规则提供者和路由规则</small>
             </label>
-            <textarea id="defaultYamlConfig" class="config-textarea" style="display:none;" placeholder="请输入默认的YAML规则配置，例如：
-dns:
-  enable: true
-  listen: 0.0.0.0:53
-  default-nameserver:
-    - 119.29.29.29
-    - 223.5.5.5
-  nameserver:
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://dns.google/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-    ipcidr:
-      - 240.0.0.0/4
-
-rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
-    path: ./ruleset/reject.yaml
-    interval: 86400
-
-  icloud:
-    type: http
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt
-    path: ./ruleset/icloud.yaml
-    interval: 86400
-
-  apple:
-    type: http
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt
-    path: ./ruleset/apple.yaml
-    interval: 86400
-
-  google:
-    type: http
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt
-    path: ./ruleset/google.yaml
-    interval: 86400
-
-  proxy:
-    type: http
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
+            <textarea
+              id="defaultYamlConfig"
+              class="config-textarea"
+              style="display:none;"
+              placeholder="请输入默认的 YAML 规则配置；留空时将使用服务端内置的默认配置（src/data/defaultYmal.ts）"
+            >
     path: ./ruleset/proxy.yaml
     interval: 86400
 
