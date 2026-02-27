@@ -26,7 +26,6 @@ dns:
     - '*.arpa'
     - 'time.*.com'
     - 'ntp.*.com'
-    - 'time.*.com'
     - '+.market.xiaomi.com'
     - 'localhost.ptlogin2.qq.com'
     - '*.msftncsi.com'
@@ -224,74 +223,21 @@ rule-providers:
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
     path: ./ruleset/applications.yaml
     interval: 86400
+  AppleAI_Domain:
+    type: http
+    behavior: domain
+    interval: 86400
+    url: https://cdn.jsdelivr.net/gh/Accademia/Additional_Rule_For_Clash@master/AppleAI/AppleAI_Domain.yaml
+    path: ./ruleset/AppleAI_Domain.yaml
+
 
 # MARK: 路由规则
 rules:
-
-  #避免clashmi报错
+  # 避免clashmi报错
   - DOMAIN-SUFFIX,fastly.jsdelivr.net,直接连接,no-resolve
 
-  # 服务器
-  - IP-CIDR,13.229.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,122.248.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,23.185.168.0/24,DIRECT,no-resolve
-  - IP-CIDR,38.78.145.0/24,DIRECT,no-resolve
-  - IP-CIDR,216.151.168.0/24,DIRECT,no-resolve
-  - IP-CIDR,45.152.240.0/24,DIRECT,no-resolve
-  - IP-CIDR,113.192.61.0/24,DIRECT,no-resolv
-  - IP-CIDR,66.253.43.0/24,DIRECT,no-resolve
-  - IP-CIDR,185.194.54.0/24,DIRECT,no-resolve
+  # ====== PROCESS-NAME 进程规则（最高优先级） ======
 
-  # AI(OpenAI, Anthropic/Claude, Gemini)
-  - RULE-SET,OpenAI,海外AI,no-resolve
-  - RULE-SET,Gemini,海外AI,no-resolve
-  - RULE-SET,Anthropic,海外AI,no-resolve
-  - RULE-SET,Claude,海外AI,no-resolve
-  - RULE-SET,Google,海外AI,no-resolve
-
-  # 媒体（YouTube、Twitter）
-  - RULE-SET,Youtube,海外媒体,no-resolve
-  - RULE-SET,Twitter,海外媒体,no-resolve
-
-
-  # 规则匹配
-  - DOMAIN-SUFFIX,chzhshch.org,直接连接,no-resolve
-  - DOMAIN-SUFFIX,figozhu.xyz,直接连接,no-resolve
-  - DOMAIN-SUFFIX,tu-zi.com,直接连接,no-resolve
-  - DOMAIN-SUFFIX,one.api4gpt.com,直接连接,no-resolve
-  - DOMAIN-SUFFIX,anyrouter.top,直接连接,no-resolve
-  - DOMAIN-SUFFIX,rainapp.top,直接连接,no-resolve
-  - DOMAIN-SUFFIX,immersivetranslate.com,直接连接,no-resolve
-  - DOMAIN-SUFFIX,filesystem.site,直接连接,no-resolve
-  - DOMAIN-SUFFIX,bing.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,a-nomad.com,直接连接,no-resolve
-  - DOMAIN-SUFFIX,api2d.net,直接连接,no-resolve
-  - DOMAIN-SUFFIX,appstorrent.ru,其它流量,no-resolve
-  - DOMAIN-SUFFIX,figma.com,直接连接,no-resolve
-
-  # Apple-Intelligence
-  - DOMAIN-SUFFIX,apple-relay.apple.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,apple-relay.fastly-edge.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,apple-relay.cloudflare.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,gateway.icloud.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,cp4.cloudflare.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,gspe1-ssl.ls.apple.com,海外AI,no-resolve
-  - DOMAIN-SUFFIX,apps.mzstatic.com,海外AI,no-resolve
-  - RULE-SET,Apple,海外AI,no-resolve
-  - RULE-SET,Siri,海外AI,no-resolve
-
-  # 币圈
-  - RULE-SET,Binance,币安,no-resolve
-  - DOMAIN-SUFFIX,roogoo.com,币安,no-resolve
-
-  # 指定应用
-  - RULE-SET,Whatsapp,IM-WhatsApp,no-resolve
-  - RULE-SET,Telegram,IM-Telegram,no-resolve
-  - RULE-SET,SteamCN,直接连接,no-resolve
-  - RULE-SET,Steam,GameSteam,no-resolve
-
-  # 进程
-  
   # ClubGG
   - PROCESS-NAME,ClubGG.exe,DIRECT
   - PROCESS-NAME,ClubGG,DIRECT
@@ -301,15 +247,10 @@ rules:
   - DOMAIN-SUFFIX,rum-api.clubgg.com,DIRECT,no-resolve
   - DOMAIN-SUFFIX,apigw-client.good-game-service.com,DIRECT,no-resolve
 
-  # PokerClient
-  - PROCESS-NAME,GGnet.exe,PokerClient
-  - PROCESS-NAME,PokerStars.exe,PokerClient
-  - DOMAIN-SUFFIX,gtowizard.com,DIRECT,no-resolve
-  - DOMAIN-KEYWORD,gtowizard-org-,DIRECT,no-resolve
-
   # 雀魂
   - PROCESS-NAME,Jantama_MahjongSoul.exe,DIRECT,no-resolve
 
+  # 代理工具
   - PROCESS-NAME,v2ray,DIRECT
   - PROCESS-NAME,xray,DIRECT
   - PROCESS-NAME,naive,DIRECT
@@ -333,6 +274,8 @@ rules:
   - PROCESS-NAME,Surge%202,DIRECT
   - PROCESS-NAME,Surge%203,DIRECT
   - PROCESS-NAME,Surge%204,DIRECT
+
+  # 下载工具
   - PROCESS-NAME,xllite,DIRECT
   - PROCESS-NAME,Thunder,DIRECT
   - PROCESS-NAME,ThunderVIP,DIRECT
@@ -360,23 +303,67 @@ rules:
   - PROCESS-NAME,transmission-qt.exe,DIRECT
   - PROCESS-NAME,uTorrent.exe,DIRECT
   - PROCESS-NAME,WebTorrent.exe,DIRECT
+
+  # ====== DOMAIN 精确域名匹配 ======
+
+  # Apple-Intelligence
+  - DOMAIN,apple-relay.apple.com,海外AI
+  - DOMAIN,apple-relay.fastly-edge.com,海外AI
+  - DOMAIN,apple-relay.cloudflare.com,海外AI
+  - DOMAIN-SUFFIX,gateway.icloud.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,cp4.cloudflare.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,gspe1-ssl.ls.apple.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,apps.mzstatic.com,海外AI,no-resolve
+  - RULE-SET,Apple,海外AI,no-resolve
+  - RULE-SET,Siri,海外AI,no-resolve
+  - RULE-SET,AppleAI_Domain,海外AI
+
+  # Clash 面板
   - DOMAIN,clash.razord.top,DIRECT,no-resolve
   - DOMAIN,yacd.haishan.me,DIRECT,no-resolve
+
+  # ====== DOMAIN-SUFFIX 域名后缀匹配 ======
+
+  # 自定义域名规则
+  - DOMAIN-SUFFIX,bing.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,figma.com,直接连接,no-resolve
+
+  # 币圈
+  - DOMAIN-SUFFIX,roogoo.com,币安,no-resolve
+  - RULE-SET,Binance,币安,no-resolve
+
+  # ====== IP-CIDR IP地址段匹配 ======
+
+  # 服务器
+  - IP-CIDR,13.229.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,122.248.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,23.185.168.0/24,DIRECT,no-resolve
+  - IP-CIDR,38.78.145.0/24,DIRECT,no-resolve
+  - IP-CIDR,216.151.168.0/24,DIRECT,no-resolve
+  - IP-CIDR,45.152.240.0/24,DIRECT,no-resolve
+  - IP-CIDR,113.192.61.0/24,DIRECT,no-resolv
+  - IP-CIDR,66.253.43.0/24,DIRECT,no-resolve
+  - IP-CIDR,185.194.54.0/24,DIRECT,no-resolve
+
+  # ====== RULE-SET 规则集匹配 ======
+
+  # AI（OpenAI, Anthropic/Claude, Gemini）
+  - RULE-SET,OpenAI,海外AI,no-resolve
+  - RULE-SET,Gemini,海外AI,no-resolve
+  - RULE-SET,Anthropic,海外AI,no-resolve
+  - RULE-SET,Claude,海外AI,no-resolve
+  - RULE-SET,Google,海外AI,no-resolve
+
+  # 媒体（YouTube、Twitter）
+  - RULE-SET,Youtube,海外媒体,no-resolve
+  - RULE-SET,Twitter,海外媒体,no-resolve
+
+  # 通用规则集
   - RULE-SET,private,DIRECT,no-resolve
   - RULE-SET,reject,REJECT,no-resolve
   - RULE-SET,direct,DIRECT,no-resolve
 
-  # EMBY公益服
-  - DOMAIN-SUFFIX,123456.al,EMBY,no-resolve
-  - DOMAIN-SUFFIX,cherrytv.one,EMBY,no-resolve
-  - DOMAIN-SUFFIX,daumcdn.net,EMBY,no-resolve
-  - DOMAIN-SUFFIX,aop4.204cloud.com,直接连接,no-resolve
-  - DOMAIN-SUFFIX,alphatvop.alphatvapp.top,EMBY,no-resolve
-  - DOMAIN-SUFFIX,misty.cx,EMBY,no-resolve
-  - DOMAIN-SUFFIX,emby.wtf,EMBY,no-resolve
-  - DOMAIN-SUFFIX,term.wtf,EMBY,no-resolve
-  - DOMAIN-SUFFIX,emby1.69yun69.com,EMBY,no-resolve
-    
+  # ====== 兜底规则 ======
   - GEOIP,LAN,DIRECT,no-resolve
   - GEOIP,CN,DIRECT,no-resolve
   - RULE-SET,proxy,其它流量,no-resolve
