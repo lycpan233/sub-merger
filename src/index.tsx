@@ -1789,7 +1789,8 @@ rules:
       let currentPreviewSubTab = 'monthly';
 
       function updatePreviewEditorValue() {
-        if (window.previewYamlEditor) {
+        // 只有在 Monaco 编辑器实例已正确初始化时才更新内容，避免 setValue 不是函数的错误
+        if (window.previewYamlEditor && typeof window.previewYamlEditor.setValue === 'function') {
           const text = currentPreviewSubTab === 'monthly' ? previewMonthlyYaml : previewOnetimeYaml;
           window.previewYamlEditor.setValue(text || '# 暂无数据，请点击下方刷新按钮');
         }
