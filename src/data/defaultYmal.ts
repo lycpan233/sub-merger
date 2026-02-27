@@ -270,23 +270,21 @@ rules:
   - DOMAIN-SUFFIX,figma.com,直接连接,no-resolve
 
   # Apple-Intelligence
-  - DOMAIN-SUFFIX,apple-relay.apple.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,apple-relay.fastly-edge.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,apple-relay.cloudflare.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,gateway.icloud.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,cp4.cloudflare.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,gspe1-ssl.ls.apple.com,其它流量,no-resolve
-  - DOMAIN-SUFFIX,apps.mzstatic.com,其它流量,no-resolve
-  - RULE-SET,Apple,其它流量,no-resolve
-  - RULE-SET,Siri,其它流量,no-resolve
+  - DOMAIN-SUFFIX,apple-relay.apple.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,apple-relay.fastly-edge.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,apple-relay.cloudflare.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,gateway.icloud.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,cp4.cloudflare.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,gspe1-ssl.ls.apple.com,海外AI,no-resolve
+  - DOMAIN-SUFFIX,apps.mzstatic.com,海外AI,no-resolve
+  - RULE-SET,Apple,海外AI,no-resolve
+  - RULE-SET,Siri,海外AI,no-resolve
 
   # 币圈
   - RULE-SET,Binance,币安,no-resolve
   - DOMAIN-SUFFIX,roogoo.com,币安,no-resolve
-  - DOMAIN-SUFFIX,ether.fi,泰国节点,no-resolve
 
   # 指定应用
-  - RULE-SET,NPMjs,中转代理,no-resolve
   - RULE-SET,Whatsapp,IM-WhatsApp,no-resolve
   - RULE-SET,Telegram,IM-Telegram,no-resolve
   - RULE-SET,SteamCN,直接连接,no-resolve
@@ -383,7 +381,6 @@ rules:
   - GEOIP,CN,DIRECT,no-resolve
   - RULE-SET,proxy,其它流量,no-resolve
   - MATCH,其它流量
-
 `;
 
 // 默认的YAML配置，作为备用

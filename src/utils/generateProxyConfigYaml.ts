@@ -342,14 +342,14 @@ async function generateProxyConfigYaml(
           : uniqueNodesArr(otherNodes.map((node: any) => node.name)),
     },
     {
-      name: "中转代理",
+      name: "海外AI",
       type: "select",
-      proxies: uniqueNodesArr(proxyNodes.map((node: any) => node.name)),
+      proxies: uniqueNodesArr(aiNodes.map((node: any) => node.name)),
     },
     {
-      name: "落地节点",
+      name: "海外媒体",
       type: "select",
-      proxies: uniqueNodesArr(exitNodes.map((node: any) => node.name)),
+      proxies: uniqueNodesArr(mediaNodes.map((node: any) => node.name)),
     },
     {
       name: "IM-Telegram",
@@ -360,34 +360,6 @@ async function generateProxyConfigYaml(
       name: "币安",
       type: "select",
       proxies: uniqueNodesArr(binanceNodes.map((node: any) => node.name)),
-    },
-    {
-      name: "IM-WhatsApp",
-      type: "select",
-      proxies: uniqueNodesArr(whatsappNodes.map((node: any) => node.name)),
-    },
-    {
-      name: "海外媒体",
-      type: "select",
-      proxies: uniqueNodesArr(aiNodes.map((node: any) => node.name)),
-    },
-    {
-      name: "PokerClient",
-      type: "select",
-      proxies: uniqueNodesArr([
-        "直接连接",
-        ...pokerNodes.map((node: any) => node.name),
-      ]),
-    },
-    {
-      name: "GameSteam",
-      type: "select",
-      proxies: uniqueNodesArr(steamNodes.map((node: any) => node.name)),
-    },
-    {
-      name: "EMBY",
-      type: "select",
-      proxies: uniqueNodesArr(embyNodes.map((node: any) => node.name)),
     },
     {
       name: "故障转移",
@@ -430,14 +402,14 @@ async function generateProxyConfigYaml(
           : uniqueNodesArr(otherNodesForStash.map((node: any) => node.name)),
     },
     {
-      name: "中转代理",
+      name: "海外AI",
       type: "select",
-      proxies: uniqueNodesArr(proxyNodesForStash.map((node: any) => node.name)),
+      proxies: uniqueNodesArr(aiNodesForStash.map((node: any) => node.name)),
     },
     {
-      name: "落地节点",
+      name: "海外媒体",
       type: "select",
-      proxies: uniqueNodesArr(exitNodesForStash.map((node: any) => node.name)),
+      proxies: uniqueNodesArr(mediaNodesForStash.map((node: any) => node.name)),
     },
     {
       name: "IM-Telegram",
@@ -452,36 +424,6 @@ async function generateProxyConfigYaml(
       proxies: uniqueNodesArr(
         binanceNodesForStash.map((node: any) => node.name),
       ),
-    },
-    {
-      name: "IM-WhatsApp",
-      type: "select",
-      proxies: uniqueNodesArr(
-        whatsappNodesForStash.map((node: any) => node.name),
-      ),
-    },
-    {
-      name: "海外媒体",
-      type: "select",
-      proxies: uniqueNodesArr(aiNodesForStash.map((node: any) => node.name)),
-    },
-    {
-      name: "PokerClient",
-      type: "select",
-      proxies: uniqueNodesArr([
-        "直接连接",
-        ...pokerNodesForStash.map((node: any) => node.name),
-      ]),
-    },
-    {
-      name: "GameSteam",
-      type: "select",
-      proxies: uniqueNodesArr(steamNodesForStash.map((node: any) => node.name)),
-    },
-    {
-      name: "EMBY",
-      type: "select",
-      proxies: uniqueNodesArr(embyNodesForStash.map((node: any) => node.name)),
     },
     {
       name: "故障转移",
