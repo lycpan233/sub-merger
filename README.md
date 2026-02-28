@@ -7,29 +7,19 @@
 - 无论订阅地址是否被墙，CF的节点都是可以去拉取的
 - 你的Worker绑一个没被墙的域名，就可以无需代理更新订阅配置了
 
-**注意：**
+# 代码来源
 
-现在分流配置是我写死的，如果你有不同的需求，请fork了代码，自行修改
+本项目在 [`figozhu/Sub-Merger-CFWorker`](https://github.com/figozhu/Sub-Merger-CFWorker) 的基础上进行 fork 和定制修改，核心功能和使用方式与上游项目保持一致，仅在配置与个人需求相关的部分做了调整。
 
-关于Clash中流量和有效期的显示：
+# 运行指南
 
-- 流量是所有订阅源返回的数据累加起来的
-- 有效期是所有订阅源中返回的最早的到期时间
+下面按顺序介绍从环境准备、本地调试到部署到 Cloudflare 的完整流程。
 
-# 消费降级，性价比机场推荐
-
-AFF机场推荐：
-
-| 机场名                | 价格                                                                      | 注册网址                                                                  | 特色                                                                                 |
-| --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 【强烈推荐】SOS加速器 | ￥50/一次性（150G/100Mbps），￥19.7/70G/50Mbps/月，￥39.7/300G/300Mbps/月 | [SOS加速器网址](https://www.sosjsq.com/index.php#/register?code=E9zVBYSD) | 有一次性流量包，价格稍微有点高，但速度是真快，39.7那档说是300Mbps，我实测能到500Mbps |
-| 宝可梦星云            | ￥19.9/180G/月，￥39.9/211G/一次性                                        | [宝可梦网址](https://love.p6m6.com/#/register?code=6UZHzm0o)              | 有一次性流量包，每个月有免费的包月体验套餐，有IPLC线路                               |
-
-# Wrangler 初始化指南
+## 1. Wrangler 初始化
 
 首次使用或在新环境部署前，需要先完成以下步骤。
 
-## 1. 安装 Wrangler
+### 1.1 安装 Wrangler
 
 （若已全局安装可跳过）
 
@@ -39,7 +29,7 @@ npm i -g wrangler
 pnpm add -g wrangler
 ```
 
-## 2. 登录 Cloudflare
+### 1.2 登录 Cloudflare
 
 ```bash
 wrangler login
@@ -47,7 +37,7 @@ wrangler login
 
 浏览器会打开 Cloudflare 授权页，登录并授权后即可。
 
-## 3. 创建 KV 命名空间
+### 1.3 创建 KV 命名空间
 
 本项目使用 KV 存储订阅缓存，需先创建一个 KV 命名空间：
 
@@ -59,7 +49,7 @@ wrangler kv namespace create SUB_MERGER_KV
 
 也可在 [Cloudflare Dashboard](https://dash.cloudflare.com) → **Workers & Pages** → **KV** → **Create namespace** 中创建，创建后在详情页查看 **Namespace ID**。
 
-## 4. 生成并填写 wrangler.toml
+### 1.4 生成并填写 wrangler.toml
 
 ```bash
 cp wrangler.toml.template wrangler.toml
@@ -76,7 +66,7 @@ cp wrangler.toml.template wrangler.toml
 
 ---
 
-# 本地开发、调试
+## 2. 本地开发、调试
 
 1. 安装依赖
 
@@ -91,7 +81,7 @@ pnpm install
 pnpm run dev
 ```
 
-# 部署到CF
+## 3. 部署到 CF
 
 若尚未完成 Wrangler 初始化，请先阅读上方「Wrangler 初始化指南」。
 

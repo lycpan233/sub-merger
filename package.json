@@ -1,6 +1,6 @@
 {
   "name": "sub-merger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "scripts": {
     "dev": "wrangler dev src/index.tsx --test-scheduled",
     "deploy": "wrangler deploy --minify src/index.tsx"
