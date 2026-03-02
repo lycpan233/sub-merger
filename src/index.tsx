@@ -852,6 +852,35 @@ app.post("/login", async (c) => {
   return c.json(resultObj);
 });
 
+// 避免浏览器请求 /favicon.ico 时 404
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#3b82f6"/><text x="16" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="bold" fill="white" text-anchor="middle">S</text></svg>`;
+
+app.get("/favicon.ico", (c) => {
+  return new Response(faviconSvg, {
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+});
+
+// 同源代理 Monaco，避免 Safari「防止跨站跟踪」拦截 CDN 的 storage 访问
+const MONACO_CDN = "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0";
+app.get("/monaco/*", async (c) => {
+  const path = c.req.path.slice("/monaco".length) || "/";
+  const url = `${MONACO_CDN}${path}`;
+  const res = await fetch(url);
+  if (!res.ok) return c.text("Not Found", 404);
+  const contentType = res.headers.get("Content-Type") ?? "application/octet-stream";
+  return new Response(res.body, {
+    status: res.status,
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+});
+
 app.get("/set", async (c) => {
   const valueStr = JSON.stringify({ foo: "bar" });
   await c.env.SUB_MERGER_KV.put("foo", valueStr);
@@ -1117,6 +1146,7 @@ app.get("/", async (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="icon" type="image/svg+xml" href="/favicon.ico">
       <title>Sub Merger 登录</title>
       <style>${globalStyles}</style>
     </head>
@@ -1216,9 +1246,10 @@ app.get("/dashboard", async (c) => {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <title>订阅管理控制台</title>
     <style>${globalStyles}</style>
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+    <script src="/monaco/min/vs/loader.js"></script>
     <script>
       // 初始化 Monaco Editor（用于 YAML 配置和自建节点 JSON）
       function initMonacoEditor() {
@@ -1226,7 +1257,8 @@ app.get("/dashboard", async (c) => {
           console.error('Monaco loader 未加载');
           return;
         }
-        window.require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' } });
+        // Worker 内无 document base，必须用绝对 URL，否则 fetch 相对路径会报错
+window.require.config({ paths: { vs: (window.location.origin || '') + '/monaco/min/vs' } });
         window.require(['vs/editor/editor.main'], function () {
           const yamlTextarea = document.getElementById('defaultYamlConfig');
           const yamlEditorContainer = document.getElementById('defaultYamlEditor');
