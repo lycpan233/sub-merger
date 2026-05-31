@@ -966,9 +966,7 @@ async function GetSubYamlWithCache(
   const [subuserInfo, totalNode] = await getSubscribeYaml(allTarget, env);
   const { normalYaml, stashYaml } = await generateProxyConfigYaml(
     totalNode,
-    subType === SubscriptionType.Monthly
-      ? env.SUBSCRIBE_PATTERN
-      : env.ONETIME_PATTERN,
+    env.SUBSCRIBE_PATTERN,
     env,
   );
   const defaultYaml = await getDefaultYaml(env);

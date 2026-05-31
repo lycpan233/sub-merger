@@ -1,6 +1,6 @@
 import YAML from "yaml";
-import { filterProxyForStash } from "./filterForStash";
 import { getSelfNodeData } from "../data/selfNodeData";
+import { filterProxyForStash } from "./filterForStash";
 
 function filterNodes(
   nodes: any[],
@@ -34,6 +34,12 @@ function filterNodesForStash(
 
 function uniqueNodesArr(nodeNameArr: string[]) {
   return Array.from(new Set(nodeNameArr));
+}
+
+/** 策略组首项引用「其它流量」，沿用用户在其它流量里选中的节点 */
+function withOtherTrafficProxyGroup(nodeNames: string[]): string[] {
+  const unique = uniqueNodesArr(nodeNames);
+  return unique.length > 0 ? ["其它流量", ...unique] : ["其它流量"];
 }
 
 interface IProxyYamlInfo {
@@ -142,16 +148,6 @@ async function generateProxyConfigYaml(
   whatsappNodes = filterNodes(
     whatsappNodes,
     envConfig.WHATSAPP_EXCLUDE_PATTERN || "",
-    true,
-  );
-  let telegramNodes = filterNodes(
-    allowNodes,
-    envConfig.TELEGRAM_MATCH_PATTERN || "",
-    false,
-  );
-  telegramNodes = filterNodes(
-    telegramNodes,
-    envConfig.TELEGRAM_EXCLUDE_PATTERN || "",
     true,
   );
   let steamNodes = filterNodes(
@@ -280,16 +276,6 @@ async function generateProxyConfigYaml(
     envConfig.AI_EXCLUDE_PATTERN || "",
     true,
   );
-  let telegramNodesForStash = filterNodes(
-    allowNodesForStash,
-    envConfig.TELEGRAM_MATCH_PATTERN || "",
-    false,
-  );
-  telegramNodesForStash = filterNodes(
-    telegramNodesForStash,
-    envConfig.TELEGRAM_EXCLUDE_PATTERN || "",
-    true,
-  );
   let steamNodesForStash = filterNodes(
     allowNodesForStash,
     envConfig.STEAM_MATCH_PATTERN || "",
@@ -331,35 +317,40 @@ async function generateProxyConfigYaml(
     true,
   );
 
-  // 生成 proxy-groups 配置
+  const allAvailableProxies = uniqueNodesArr(
+    allowNodes.map((node: any) => node.name),
+  );
+  const allAvailableProxiesForStash = uniqueNodesArr(
+    allowNodesForStash.map((node: any) => node.name),
+  );
+
+  // 生成 proxy-groups 配置（其它流量须最先定义，供其它组引用）
   const proxyGroups = [
     {
       name: "其它流量",
       type: "select",
-      proxies:
-        selfNodes.length > 0
-          ? ["自建节点", "海外AI", "机场节点"]
-          : uniqueNodesArr(otherNodes.map((node: any) => node.name)),
+      proxies: allAvailableProxies,
     },
     {
       name: "海外AI",
       type: "select",
-      proxies: uniqueNodesArr(aiNodes.map((node: any) => node.name)),
+      proxies: withOtherTrafficProxyGroup(
+        aiNodes.map((node: any) => node.name),
+      ),
     },
     {
       name: "海外媒体",
       type: "select",
-      proxies: uniqueNodesArr(mediaNodes.map((node: any) => node.name)),
-    },
-    {
-      name: "IM-Telegram",
-      type: "select",
-      proxies: uniqueNodesArr(telegramNodes.map((node: any) => node.name)),
+      proxies: withOtherTrafficProxyGroup(
+        mediaNodes.map((node: any) => node.name),
+      ),
     },
     {
       name: "币安",
       type: "select",
-      proxies: uniqueNodesArr(binanceNodes.map((node: any) => node.name)),
+      proxies: withOtherTrafficProxyGroup(
+        binanceNodes.map((node: any) => node.name),
+      ),
     },
     {
       name: "故障转移",
@@ -375,53 +366,30 @@ async function generateProxyConfigYaml(
     },
   ];
 
-  if (selfNodes.length > 0) {
-    proxyGroups.splice(
-      1,
-      0,
-      {
-        name: "自建节点",
-        type: "select",
-        proxies: selfNodes.map((node: any) => node.name),
-      },
-      {
-        name: "机场节点",
-        type: "select",
-        proxies: uniqueNodesArr(otherNodes.map((node: any) => node.name)),
-      },
-    );
-  }
-
   const proxyGroupsForStash = [
     {
       name: "其它流量",
       type: "select",
-      proxies:
-        selfNodes.length > 0
-          ? ["自建节点", "海外AI", "机场节点"]
-          : uniqueNodesArr(otherNodesForStash.map((node: any) => node.name)),
+      proxies: allAvailableProxiesForStash,
     },
     {
       name: "海外AI",
       type: "select",
-      proxies: uniqueNodesArr(aiNodesForStash.map((node: any) => node.name)),
+      proxies: withOtherTrafficProxyGroup(
+        aiNodesForStash.map((node: any) => node.name),
+      ),
     },
     {
       name: "海外媒体",
       type: "select",
-      proxies: uniqueNodesArr(mediaNodesForStash.map((node: any) => node.name)),
-    },
-    {
-      name: "IM-Telegram",
-      type: "select",
-      proxies: uniqueNodesArr(
-        telegramNodesForStash.map((node: any) => node.name),
+      proxies: withOtherTrafficProxyGroup(
+        mediaNodesForStash.map((node: any) => node.name),
       ),
     },
     {
       name: "币安",
       type: "select",
-      proxies: uniqueNodesArr(
+      proxies: withOtherTrafficProxyGroup(
         binanceNodesForStash.map((node: any) => node.name),
       ),
     },
@@ -440,25 +408,6 @@ async function generateProxyConfigYaml(
       proxies: ["DIRECT"],
     },
   ];
-
-  if (selfNodes.length > 0) {
-    proxyGroupsForStash.splice(
-      1,
-      0,
-      {
-        name: "自建节点",
-        type: "select",
-        proxies: selfNodes.map((node: any) => node.name),
-      },
-      {
-        name: "机场节点",
-        type: "select",
-        proxies: uniqueNodesArr(
-          otherNodesForStash.map((node: any) => node.name),
-        ),
-      },
-    );
-  }
 
   // 创建完整的配置对象
   const config = {
