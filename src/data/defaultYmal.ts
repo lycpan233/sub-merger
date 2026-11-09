@@ -341,7 +341,7 @@ rules:
   - IP-CIDR,38.78.145.0/24,DIRECT,no-resolve
   - IP-CIDR,216.151.168.0/24,DIRECT,no-resolve
   - IP-CIDR,45.152.240.0/24,DIRECT,no-resolve
-  - IP-CIDR,113.192.61.0/24,DIRECT,no-resolv
+  - IP-CIDR,113.192.61.0/24,DIRECT,no-resolve
   - IP-CIDR,66.253.43.0/24,DIRECT,no-resolve
   - IP-CIDR,185.194.54.0/24,DIRECT,no-resolve
 
