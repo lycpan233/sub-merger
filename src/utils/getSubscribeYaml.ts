@@ -71,7 +71,7 @@ async function getSubscribeYaml(subArr: any[], envConfig: any): Promise<any[]> {
   const headers = {
     accept: "*/*",
     "accept-encoding": "br, gzip",
-    "User-Agent": userAgent ? userAgent : "clash-verge/v1.7.7",
+    "User-Agent": userAgent ? userAgent : "clash-verge/v2.4.1",
   };
 
   const subUserInfo = {

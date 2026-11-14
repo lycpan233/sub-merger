@@ -36,10 +36,14 @@ function uniqueNodesArr(nodeNameArr: string[]) {
   return Array.from(new Set(nodeNameArr));
 }
 
-/** 策略组首项引用「其它流量」，沿用用户在其它流量里选中的节点 */
-function withOtherTrafficProxyGroup(nodeNames: string[]): string[] {
+// 匹配中文地区名、旗帜及独立地区代码，避免把 AUS 等名称误当成 US。
+const defaultTransitPattern =
+  "美国|美國|新加坡|狮城|獅城|香港|🇺🇸|🇸🇬|🇭🇰|(?:^|[^A-Za-z])(?:[Uu][Ss][Aa]?|[Ss][Gg][Pp]?|[Hh][Kk][Gg]?)(?=$|[^A-Za-z])";
+
+/** 各业务组默认跟随中转代理，同时保留其它流量及单节点选项。 */
+function withTransitProxyGroup(nodeNames: string[]): string[] {
   const unique = uniqueNodesArr(nodeNames);
-  return unique.length > 0 ? ["其它流量", ...unique] : ["其它流量"];
+  return ["中转代理", "其它流量", ...unique];
 }
 
 interface IProxyYamlInfo {
@@ -86,7 +90,7 @@ async function generateProxyConfigYaml(
   );
   let proxyNodes = filterNodes(
     allowNodes,
-    envConfig.PROXY_MATCH_PATTERN || "",
+    envConfig.PROXY_MATCH_PATTERN || defaultTransitPattern,
     false,
   );
   proxyNodes = filterNodes(
@@ -180,17 +184,6 @@ async function generateProxyConfigYaml(
     envConfig.TAIGUO_EXCLUDE_PATTERN || "",
     true,
   );
-  let fallbackNodes = filterNodes(
-    allowNodes,
-    envConfig.FALLBACK_MATCH_PATTERN || "",
-    false,
-  );
-  fallbackNodes = filterNodes(
-    fallbackNodes,
-    envConfig.FALLBACK_EXCLUDE_PATTERN || "",
-    true,
-  );
-
   const allowNodesForStash = filterNodesForStash(
     realTotalNode,
     envConfig.EXCLUDE_PATTERN || "",
@@ -208,7 +201,7 @@ async function generateProxyConfigYaml(
   );
   let proxyNodesForStash = filterNodes(
     allowNodesForStash,
-    envConfig.PROXY_MATCH_PATTERN || "",
+    envConfig.PROXY_MATCH_PATTERN || defaultTransitPattern,
     false,
   );
   proxyNodesForStash = filterNodes(
@@ -306,17 +299,6 @@ async function generateProxyConfigYaml(
     envConfig.TAIGUO_EXCLUDE_PATTERN || "",
     true,
   );
-  let fallbackNodesForStash = filterNodes(
-    allowNodesForStash,
-    envConfig.FALLBACK_MATCH_PATTERN || "",
-    false,
-  );
-  fallbackNodesForStash = filterNodes(
-    fallbackNodesForStash,
-    envConfig.FALLBACK_EXCLUDE_PATTERN || "",
-    true,
-  );
-
   const allAvailableProxies = uniqueNodesArr(
     allowNodes.map((node: any) => node.name),
   );
@@ -324,40 +306,40 @@ async function generateProxyConfigYaml(
     allowNodesForStash.map((node: any) => node.name),
   );
 
-  // 生成 proxy-groups 配置（其它流量须最先定义，供其它组引用）
+  // 中转代理只引用节点；其它流量和各业务组引用它，避免循环引用。
   const proxyGroups = [
+    {
+      name: "中转代理",
+      type: "select",
+      proxies: proxyNodes.length > 0
+        ? uniqueNodesArr(proxyNodes.map((node: any) => node.name))
+        : ["REJECT"],
+    },
     {
       name: "其它流量",
       type: "select",
-      proxies: allAvailableProxies,
+      proxies: ["中转代理", ...allAvailableProxies],
     },
     {
       name: "海外AI",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         aiNodes.map((node: any) => node.name),
       ),
     },
     {
       name: "海外媒体",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         mediaNodes.map((node: any) => node.name),
       ),
     },
     {
       name: "币安",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         binanceNodes.map((node: any) => node.name),
       ),
-    },
-    {
-      name: "故障转移",
-      type: "fallback",
-      proxies: uniqueNodesArr(fallbackNodes.map((node: any) => node.name)),
-      url: "http://www.google.com/generate_204",
-      interval: 1800,
     },
     {
       name: "直接连接",
@@ -368,39 +350,37 @@ async function generateProxyConfigYaml(
 
   const proxyGroupsForStash = [
     {
+      name: "中转代理",
+      type: "select",
+      proxies: proxyNodesForStash.length > 0
+        ? uniqueNodesArr(proxyNodesForStash.map((node: any) => node.name))
+        : ["REJECT"],
+    },
+    {
       name: "其它流量",
       type: "select",
-      proxies: allAvailableProxiesForStash,
+      proxies: ["中转代理", ...allAvailableProxiesForStash],
     },
     {
       name: "海外AI",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         aiNodesForStash.map((node: any) => node.name),
       ),
     },
     {
       name: "海外媒体",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         mediaNodesForStash.map((node: any) => node.name),
       ),
     },
     {
       name: "币安",
       type: "select",
-      proxies: withOtherTrafficProxyGroup(
+      proxies: withTransitProxyGroup(
         binanceNodesForStash.map((node: any) => node.name),
       ),
-    },
-    {
-      name: "故障转移",
-      type: "fallback",
-      proxies: uniqueNodesArr(
-        fallbackNodesForStash.map((node: any) => node.name),
-      ),
-      url: "http://www.google.com/generate_204",
-      interval: 1800,
     },
     {
       name: "直接连接",
